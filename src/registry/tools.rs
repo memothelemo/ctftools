@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use tracing::{debug, trace};
@@ -11,6 +11,7 @@ pub struct ToolMetadata {
     pub description: String,
     pub packages: HashMap<String, String>,
     pub windows: ToolWindowsMetadata,
+    pub download_links: ToolDownloadLinks,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
@@ -18,21 +19,32 @@ pub struct ToolWindowsMetadata {
     pub exec_paths: Vec<PathBuf>,
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
+pub struct ToolDownloadLinks {
+    pub windows: Option<String>,
+    pub macos: Option<String>,
+    pub linux: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 struct RawToolInfo {
     pub name: String,
     pub description: String,
+
     #[serde(default)]
     pub packages: HashMap<String, String>,
+
     #[serde(default)]
     pub windows: ToolWindowsMetadata,
+
+    #[serde(default)]
+    pub download_links: ToolDownloadLinks,
 }
 
 pub static BUILTIN_TOOLS: LazyLock<Vec<ToolMetadata>> = LazyLock::new(|| {
     // deserialize the built-in json file
-    let map: HashMap<String, RawToolInfo> =
-        serde_json::from_str(include_str!("builtin-tools.json"))
-            .expect("failed to deserialize builtin tools");
+    let map: BTreeMap<String, RawToolInfo> = toml::from_str(include_str!("builtin-tools.toml"))
+        .expect("failed to deserialize builtin tools");
 
     // if name field is empty, we can override with its associated key
     let mut tools = Vec::new();
@@ -50,12 +62,14 @@ pub static BUILTIN_TOOLS: LazyLock<Vec<ToolMetadata>> = LazyLock::new(|| {
             .entry("default".to_string())
             .or_insert_with(|| command.clone());
 
+        tool.description = tool.description.trim().to_string();
         tools.push(ToolMetadata {
             name,
             command,
             description: tool.description,
             packages: tool.packages,
             windows: tool.windows,
+            download_links: tool.download_links,
         });
     }
 

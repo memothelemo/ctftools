@@ -1,0 +1,16 @@
+[cyberchef]
+name = "CyberChef"
+command = "cyberchef"
+description = """
+Browser-based Swiss-army knife for encodings, crypto, and data manipulation. Desktop build opens a local Electron wrapper.
+"""
+packages = { aur = "cyberchef-web" }
+
+[curl]
+name = "curl"
+description = "Curl"
+
+[ncat]
+name = "ncat (from Nmap)"
+description = "Netcat-like tool from Nmap"
+packages = { default = "nmap", "winget" = "Nmap.Nmap" }

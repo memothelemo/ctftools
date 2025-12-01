@@ -49,6 +49,19 @@ impl PackageManager {
         }
     }
 
+    /// Returns the corresponding key of the built-in tools registry.
+    #[must_use]
+    pub fn as_registry_key(&self) -> &'static str {
+        match self {
+            Self::Chocolatey => "choco",
+            Self::WinGet => "winget",
+            Self::Homebrew => "homebrew",
+            Self::APT => "apt",
+            Self::DNF => "dnf",
+            Self::Pacman => "pacman",
+        }
+    }
+
     #[cfg(target_os = "macos")]
     fn detect_macos() -> Result<Option<(Self, PathBuf)>> {
         find_first_match(&[("brew", PackageManager::Homebrew)])
