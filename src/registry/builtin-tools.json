@@ -1,0 +1,14 @@
+{
+    "curl": {
+        "name": "curl",
+        "description": "Curl"
+    },
+    "ncat": {
+        "name": "ncat (from Nmap)",
+        "description": "Netcat-like tool from Nmap",
+        "packages": {
+            "default": "nmap",
+            "winget": "Nmap.Nmap"
+        }
+    }
+}
