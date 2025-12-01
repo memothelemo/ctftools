@@ -1,0 +1,6 @@
+---
+source: tests/check_tools.rs
+expression: output
+---
+* ✅ foo
+All done! 1/1 tools installed.
