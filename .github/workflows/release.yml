@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "ARTIFACT_NAME=ctftools-${TAG_NAME#v}-${{ matrix.label }}.zip" >> "$GITHUB_ENV"
 
-      - name: Create Archive and SHA256 Checksum and Upload to Release
+      - name: Generate Executable Archive and Its SHA256 Checksum
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,8 +68,6 @@ jobs:
             zip ../$ARTIFACT_NAME *
             sha256sum ../$ARTIFACT_NAME > ../$ARTIFACT_NAME.sha256
           fi
-
-          gh release upload ${{ github.ref_name }} ../$ARTIFACT_NAME
 
       - name: Upload Archive to Artifacts
         uses: actions/upload-artifact@v4
