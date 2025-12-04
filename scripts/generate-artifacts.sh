@@ -38,5 +38,11 @@ fi
 # Copy artifact
 cp "$SRC" "$DEST"
 
+# To trim the target/tmp/ part
+cd $(dirname $DEST)
+
 # Generate SHA256 checksum
 sha256sum "$DEST" > "$CHECKSUM_FILE"
+
+# Go back to the previous directory then done
+cd -
