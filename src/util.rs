@@ -11,3 +11,11 @@ pub fn which_opt<T: AsRef<OsStr>>(name: T) -> Result<Option<PathBuf>> {
         Err(error) => Err(error.into()),
     }
 }
+
+/// Collection of ANSI colors for quick convenience.
+pub mod ansi {
+    use anstyle::{AnsiColor, Color, Style};
+
+    pub const GRAY: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
+    pub const BOLD: Style = Style::new().bold();
+}

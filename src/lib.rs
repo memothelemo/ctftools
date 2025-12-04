@@ -1,4 +1,4 @@
-pub mod env;
+pub mod install;
+pub mod pkg;
 pub mod registry;
-pub mod tools;
 pub mod util;

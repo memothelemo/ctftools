@@ -15,15 +15,17 @@ path = "src/cli/main.rs"
 anstream = "0.6.21"
 anstyle = "1.0.13"
 anyhow = "1.0.100"
+bon = "3.8.1"
 cfg-if = "1.0.4"
 console = "0.16.1"
 ctrlc = "3.5.1"
 dialoguer = "0.12.0"
+env_logger = "0.11.8"
+log = "0.4.29"
 maplit = "1.0.2"
 serde = { version = "1.0.228", features = ["derive"] }
-toml = { version = "0.9.8", features = ["serde"] }
-tracing = "0.1.43"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+serde_json = "1.0.145"
+thiserror = "2.0.17"
 which = "8.0.0"
 
 [target.'cfg(unix)'.dependencies]
@@ -32,3 +34,6 @@ sudo = "0.6.0"
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.62.2"
 features = ["Win32_Security", "Win32_System_Threading"]
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"

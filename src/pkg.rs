@@ -4,7 +4,8 @@ use std::path::PathBuf;
 
 /// Represents the system's package manager.
 ///
-/// The available options vary depending on the operating system:
+/// The available options vary depending on the operating system
+/// and the support from this program:
 ///
 /// - **Windows**: `Chocolatey`, `WinGet`
 /// - **macOS**: `Homebrew`
@@ -49,11 +50,29 @@ impl PackageManager {
         }
     }
 
-    /// Returns the corresponding key of the built-in tools registry.
+    /// Returns a human-friendly name for this package manager
+    /// suitable for UI display.
+    #[must_use]
+    pub fn as_display_name(&self) -> &'static str {
+        match self {
+            Self::Chocolatey => "Chocolatey",
+            Self::WinGet => "WinGet",
+            Self::Homebrew => "Homebrew",
+            Self::APT => "APT",
+            Self::DNF => "DNF",
+            Self::Pacman => "Pacman",
+        }
+    }
+
+    /// Returns the string key associated with this package manager in
+    /// the built-in toolkit registry.
+    ///
+    /// This key corresponds to the identifier used internally by the program
+    /// to reference tools installed or managed via the given package manager.
     #[must_use]
     pub fn as_registry_key(&self) -> &'static str {
         match self {
-            Self::Chocolatey => "choco",
+            Self::Chocolatey => "chocolatey",
             Self::WinGet => "winget",
             Self::Homebrew => "homebrew",
             Self::APT => "apt",
@@ -89,7 +108,7 @@ impl PackageManager {
     /// Returns whether this package manager requires elevated privileges
     /// (e.g., root or administrator) to install or update packages.
     #[must_use]
-    pub const fn requires_elevation(&self) -> bool {
+    pub const fn needs_privilege(&self) -> bool {
         match self {
             Self::Chocolatey | Self::WinGet | Self::Homebrew => false,
             Self::APT | Self::DNF | Self::Pacman => true,
@@ -125,7 +144,7 @@ impl AurHelper {
     ///
     /// AUR helpers are usually operate in user-space by default.
     #[must_use]
-    pub const fn requires_elevation(&self) -> bool {
+    pub const fn needs_privilege(&self) -> bool {
         false
     }
 }
