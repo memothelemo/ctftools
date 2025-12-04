@@ -48,7 +48,11 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: bash ./scripts/gen-artifacts.sh ${{ matrix.host }} ${{ matrix.target }} ${{ matrix.label }} ${TAG_NAME#v}
 
-      - name: Upload Files to Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          path: target/tmp/
+      - name: Upload individual files
+        shell: bash
+        run: |
+          for f in target/tmp/*; do
+            name=$(basename "$f")
+            echo "Uploading $name"
+            gh upload-artifact "$name" "$f"
+          done
