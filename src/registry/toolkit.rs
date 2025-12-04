@@ -1,5 +1,5 @@
 use bon::Builder;
-use log::{debug, trace};
+use log::debug;
 use serde::Deserialize;
 use serde_json::Value as Json;
 use std::collections::{BTreeMap, HashMap};
@@ -67,14 +67,13 @@ impl Toolkit {
                 // If `default` key is not defined in packages field then insert it
                 // with the associated key as a value.
                 if !tool.packages.contains_key("default") {
-                    tool.packages
-                        .insert("default".to_string(), tool.command.clone());
+                    tool.packages.insert("default".to_string(), command.clone());
                 }
 
                 tool.command = command;
                 tool.description = tool.description.trim().to_string();
 
-                trace!("found built-in tool: {tool:?}");
+                debug!("found built-in tool: {tool:?}");
                 tools.push(tool);
             }
 
@@ -95,6 +94,24 @@ impl Toolkit {
     #[must_use]
     pub fn tools(&self) -> &[ToolMetadata] {
         &self.tools
+    }
+}
+
+impl Toolkit {
+    /// Checks the installation of every tool available in
+    /// this particular toolkit.
+    pub fn check_install(&self) -> anyhow::Result<Vec<(&ToolMetadata, bool)>> {
+        self.tools
+            .iter()
+            .map(|tool| {
+                let installed = crate::install::find_tool_executable(tool)?.is_some();
+                debug!(
+                    "checking tool installation for {:?}; result = {installed}",
+                    tool.command
+                );
+                Ok::<_, _>((tool, installed))
+            })
+            .collect::<_>()
     }
 }
 

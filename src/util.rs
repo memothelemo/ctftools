@@ -1,6 +1,21 @@
 use anyhow::Result;
+use cfg_if::cfg_if;
 use std::ffi::OsStr;
 use std::path::PathBuf;
+use std::process::Command;
+
+/// Returns a pretty command from a Command type.
+#[must_use]
+pub fn pretty_cmd(cmd: &Command) -> String {
+    format!(
+        "{} {}",
+        cmd.get_program().to_string_lossy(),
+        cmd.get_args()
+            .map(|v| v.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join(" ")
+    )
+}
 
 /// Returns the result of [`which::which`] but it returns
 /// an optional value whether the specified name exists or not.
@@ -12,10 +27,72 @@ pub fn which_opt<T: AsRef<OsStr>>(name: T) -> Result<Option<PathBuf>> {
     }
 }
 
-/// Collection of ANSI colors for quick convenience.
-pub mod ansi {
-    use anstyle::{AnsiColor, Color, Style};
+/// Checks if the current operating system allows escalating
+/// process privileges on demand.
+#[must_use]
+pub fn supports_privilege_escalation() -> bool {
+    cfg!(target_os = "linux")
+}
 
-    pub const GRAY: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
-    pub const BOLD: Style = Style::new().bold();
+/// This function tells whether the program is running in elevation mode.
+#[must_use]
+pub fn is_running_in_elevation() -> bool {
+    #[cfg(unix)]
+    fn unix_impl() -> bool {
+        use sudo::RunningAs;
+        match sudo::check() {
+            RunningAs::Root | RunningAs::Suid => true,
+            RunningAs::User => false,
+        }
+    }
+
+    #[allow(unsafe_op_in_unsafe_fn)]
+    #[cfg(windows)]
+    unsafe fn windows_impl() -> Result<bool> {
+        // https://stackoverflow.com/a/95918/23025722
+        use anyhow::Context;
+        use windows::Win32::Foundation::{CloseHandle, HANDLE};
+        use windows::Win32::Security::{
+            GetTokenInformation, TOKEN_ELEVATION, TOKEN_READ, TokenElevation,
+        };
+        use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+
+        let mut handle_token = HANDLE(0 as _);
+        OpenProcessToken(GetCurrentProcess(), TOKEN_READ, &mut handle_token)
+            .context("could not open process token for the current process")?;
+
+        let mut size_returned = 0u32;
+        let mut elevation_info: TOKEN_ELEVATION = std::mem::zeroed();
+
+        if let Err(error) = GetTokenInformation(
+            handle_token,
+            TokenElevation,
+            Some(&mut elevation_info as *mut _ as *mut _),
+            size_of::<TOKEN_ELEVATION>() as u32,
+            &mut size_returned as *mut _,
+        ) {
+            CloseHandle(handle_token).context("could not close process token")?;
+            return Err(error.into());
+        }
+
+        CloseHandle(handle_token).context("could not close process token")?;
+        Ok(elevation_info.TokenIsElevated != 0)
+    }
+
+    cfg_if! {
+        if #[cfg(unix)] {
+            unix_impl()
+        } else if #[cfg(windows)] {
+            use tracing::warn;
+            match unsafe { windows_impl() } {
+                Ok(value) => value,
+                Err(error) => {
+                    warn!(?error, "Win32 API error occurred while trying to run `is_running_in_evalation` function");
+                    false
+                }
+            }
+        } else {
+            false
+        }
+    }
 }

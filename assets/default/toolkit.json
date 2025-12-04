@@ -9,7 +9,10 @@
     "cyberchef": {
         "name": "CyberChef",
         "command": "cyberchef",
-        "description": "Browser-based Swiss-army knife for encodings, crypto, and data manipulation. Desktop build opens a local Electron wrapper."
+        "description": "Browser-based Swiss-army knife for encodings, crypto, and data manipulation. Desktop build opens a local Electron wrapper.",
+        "packages": {
+            "aur": "cyberchef-web"
+        }
     },
     "curl": {
         "name": "curl",

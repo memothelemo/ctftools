@@ -3,10 +3,34 @@ use thiserror::Error;
 
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
+use crate::util::which_opt;
 
 pub mod aur;
 pub mod download;
-pub mod pkg;
+
+/// Finds the path of the binary executable from its name.
+pub fn find_tool_executable(tool: &ToolMetadata) -> anyhow::Result<Option<PathBuf>> {
+    // There are ways we can find the tool executable either:
+    // 1. By using the `which` operation (from PATH environment variable)
+    if let Some(path) = which_opt(&tool.command)? {
+        return Ok(Some(path));
+    }
+
+    // 2. Checking tool's associated executable (if the operating system is running on Windows)
+    #[cfg(target_os = "windows")]
+    for path in tool.windows.exec_paths.iter() {
+        use anyhow::Context;
+
+        let exists = std::fs::exists(path)
+            .with_context(|| format!("failed to find {} executable", path.display()))?;
+
+        if exists {
+            return Ok(Some(path.to_path_buf()));
+        }
+    }
+
+    Ok(None)
+}
 
 /// Represents an action to install a tool.
 #[derive(Debug, PartialEq, Eq)]
