@@ -4,6 +4,9 @@ on:
   push:
     tags: ["v*"]
 
+  # Allows manual triggering
+  workflow_dispatch:
+
 jobs:
   build:
     strategy:
@@ -47,7 +50,7 @@ jobs:
         run: |
           echo "ARTIFACT_NAME=ctftools-${TAG_NAME#v}-${{ matrix.label }}.zip" >> "$GITHUB_ENV"
 
-      - name: Create Archive and Upload to Release
+      - name: Create Archive and SHA256 Checksum and Upload to Release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,10 +61,12 @@ jobs:
             cp "target/${{ matrix.target }}/release/$BIN.exe" staging/
             cd staging
             7z a ../$ARTIFACT_NAME *
+            sha256sum ../$ARTIFACT_NAME > ../$ARTIFACT_NAME.sha256
           else
             cp "target/${{ matrix.target }}/release/$BIN" staging/
             cd staging
             zip ../$ARTIFACT_NAME *
+            sha256sum ../$ARTIFACT_NAME > ../$ARTIFACT_NAME.sha256
           fi
 
           gh release upload ${{ github.ref_name }} ../$ARTIFACT_NAME
