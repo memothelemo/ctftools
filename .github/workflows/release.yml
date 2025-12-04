@@ -69,6 +69,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: ${{ github.ref_name }}
-          tag_name: v${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
           fail_on_unmatched_files: true
           files: artifacts/**/*
