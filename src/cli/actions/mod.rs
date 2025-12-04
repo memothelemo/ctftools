@@ -1,5 +1,6 @@
-use memotools::registry::{ToolMetadata, Toolkit};
 use std::borrow::Cow;
+
+use ctftools::registry::{ToolMetadata, Toolkit};
 
 pub mod check_tools;
 pub mod install_tools;

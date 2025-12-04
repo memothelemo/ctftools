@@ -1,7 +1,8 @@
 use anstream::{eprintln, println};
 use anyhow::{Context, Result};
 use console::Term;
-use memotools::registry::Toolkit;
+
+use ctftools::registry::Toolkit;
 
 use crate::ansi::{BOLD, GRAY, GREEN, RED};
 

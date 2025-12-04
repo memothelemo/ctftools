@@ -58,12 +58,12 @@ jobs:
           mkdir staging
 
           if [ "${{ matrix.host }}" = "windows" ]; then
-            cp "target/${{ matrix.target }}/release/$BIN.exe" staging/
+            cp "target/${{ matrix.target }}/release/ctftools.exe" staging/
             cd staging
             7z a ../$ARTIFACT_NAME *
             sha256sum ../$ARTIFACT_NAME > ../$ARTIFACT_NAME.sha256
           else
-            cp "target/${{ matrix.target }}/release/$BIN" staging/
+            cp "target/${{ matrix.target }}/release/ctftools" staging/
             cd staging
             zip ../$ARTIFACT_NAME *
             sha256sum ../$ARTIFACT_NAME > ../$ARTIFACT_NAME.sha256
@@ -76,3 +76,9 @@ jobs:
         with:
           path: ${{ env.ARTIFACT_NAME }}
           name: ${{ env.ARTIFACT_NAME }}
+      
+      - name: Upload SHA256 Checkums to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ env.ARTIFACT_NAME }}.sha256
+          name: ${{ env.ARTIFACT_NAME }}.sha256

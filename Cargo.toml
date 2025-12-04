@@ -1,5 +1,5 @@
 [package]
-name = "memotools"
+name = "ctftools"
 authors = ["memothelemo <dev@memothelemo.xyz>"]
 description = "CTF Tools"
 license = "GPL-3.0"
@@ -8,7 +8,7 @@ edition = "2024"
 repository = "https://github.com/memothelemo/ctftools"
 
 [[bin]]
-name = "memotools"
+name = "ctftools"
 path = "src/cli/main.rs"
 
 [dependencies]

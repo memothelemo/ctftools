@@ -2,10 +2,10 @@ use anyhow::{Context, Result};
 use console::Term;
 use log::debug;
 
-use memotools::install::{InstallTask, InstallTaskError};
-use memotools::pkg::{AurHelper, PackageManager};
-use memotools::registry::{ToolMetadata, Toolkit};
-use memotools::util::pretty_cmd;
+use ctftools::install::{InstallTask, InstallTaskError};
+use ctftools::pkg::{AurHelper, PackageManager};
+use ctftools::registry::{ToolMetadata, Toolkit};
+use ctftools::util::pretty_cmd;
 
 use crate::ansi::{BOLD, GRAY, YELLOW_BOLD};
 
@@ -97,12 +97,12 @@ pub fn run_with_tools(term: &Term, tools_to_install: Vec<&ToolMetadata>) -> Resu
                 arguments,
                 sudo,
             } => {
-                let mut cmd = memotools::exec::make_cmd(exec, arguments, sudo);
+                let mut cmd = ctftools::exec::make_cmd(exec, arguments, sudo);
                 println!(
                     "{BOLD}Running{BOLD:#}: {GRAY}{}{GRAY:#}...",
                     pretty_cmd(&cmd)
                 );
-                memotools::exec::run_cmd(&mut cmd, sudo).context("failed to install tool")?;
+                ctftools::exec::run_cmd(&mut cmd, sudo).context("failed to install tool")?;
             }
             InstallTask::Download { .. } => todo!("Download link support"),
             InstallTask::AUR { .. } => todo!("AUR implementation"),

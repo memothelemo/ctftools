@@ -7,7 +7,7 @@ use dialoguer::theme::ColorfulTheme;
 use log::{debug, info};
 use std::io::Write;
 
-use memotools::registry::Toolkit;
+use ctftools::registry::Toolkit;
 
 mod actions;
 use crate::actions::Action;
