@@ -43,9 +43,10 @@ jobs:
         run: cargo build --release --locked --verbose --target ${{ matrix.target }}
 
       - name: Generate artifacts
+        shell: bash
         env:
           TAG_NAME: ${{ github.ref_name }}
-        run: bash ./scripts/gen-artifacts.sh ${{ matrix.host }} ${{ matrix.target }} ${{ matrix.label }} ${TAG_NAME#v}
+        run: bash ./scripts/generate-artifacts.sh ${{ matrix.host }} ${{ matrix.target }} ${{ matrix.label }} ${TAG_NAME#v}
 
       - name: Upload files to artifacts
         uses: actions/upload-artifact@v4
