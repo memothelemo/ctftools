@@ -1,17 +1,10 @@
 use anstream::stream::IsTerminal;
 use anstyle::{AnsiColor, Style};
 use anyhow::{Context, Result, ensure};
-use console::Term;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
 use memotools::registry::BUILTIN_TOOLS;
-
-mod check_tools;
-mod choices;
-mod install_tools;
-
-use self::choices::Choice;
 
 fn print_header() {
     let gray = Style::new().fg_color(Some(AnsiColor::BrightBlack.into()));
@@ -45,33 +38,7 @@ fn main() -> Result<()> {
     ensure!(std::io::stderr().is_terminal(), "stderr must be a terminal");
 
     // The main program code itself
-    let mut term = Term::stderr();
     print_header();
 
-    let choice = Choice::from_user_choice().unwrap();
-    term.clear_last_lines(1)?;
-
-    match choice {
-        Choice::CheckTools => {
-            self::check_tools::run(&mut term).context("failed to check for installation of tools")
-        }
-        Choice::InstallTools => {
-            self::install_tools::run(&mut term).context("failed to install missing built-in tools")
-        }
-        Choice::Exit => {
-            let green = Style::new()
-                .fg_color(Some(AnsiColor::BrightGreen.into()))
-                .bold();
-
-            eprintln!("{green}Good luck to your CTFs!! 🚩🫶{green:#}");
-            Ok(())
-        }
-        Choice::Tool(tool) => {
-            let header = Style::new().bold();
-            println!("{header}Selected tool{header:#}: {}", tool.name);
-            println!("{header}Description{header:#}:\n{}", tool.description);
-
-            Ok(())
-        }
-    }
+    Ok(())
 }
