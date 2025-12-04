@@ -83,11 +83,11 @@ pub fn is_running_in_elevation() -> bool {
         if #[cfg(unix)] {
             unix_impl()
         } else if #[cfg(windows)] {
-            use tracing::warn;
+            use log::warn;
             match unsafe { windows_impl() } {
                 Ok(value) => value,
                 Err(error) => {
-                    warn!(?error, "Win32 API error occurred while trying to run `is_running_in_evalation` function");
+                    warn!("Win32 API error occurred while trying to run `is_running_in_evalation` function: {error}");
                     false
                 }
             }
