@@ -9,7 +9,7 @@ repository = "https://github.com/memothelemo/ctftools"
 
 [[bin]]
 name = "ctftools"
-path = "src/bin/main.rs"
+path = "src/cli/main.rs"
 
 [dependencies]
 anstream = "0.6.21"
@@ -17,6 +17,7 @@ anstyle = "1.0.13"
 anyhow = "1.0.100"
 bon = "3.8.1"
 cfg-if = "1.0.4"
+clap = { version = "4.5.53", features = ["derive"] }
 console = "0.16.1"
 ctrlc = "3.5.1"
 dialoguer = { version = "0.12.0", features = ["fuzzy-select"] }
@@ -36,4 +37,6 @@ version = "0.62.2"
 features = ["Win32_Security", "Win32_System_Threading"]
 
 [dev-dependencies]
+assert_cmd = "2.1.1"
+insta = "1.44.3"
 pretty_assertions = "1.4.1"

@@ -1,7 +1,8 @@
+use anyhow::{Context, Result};
 use bon::Builder;
 use log::debug;
-use serde::Deserialize;
-use serde_json::Value as Json;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value as Json, json};
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -29,6 +30,42 @@ impl Toolkit {
         Self { tools }
     }
 
+    /// Deserializes the JSON from a given string into a toolkit.
+    pub fn from_json(json: &str) -> Result<Self> {
+        let map: BTreeMap<String, Json> = serde_json::from_str(json)
+            .expect("failed to deserialize built-in toolkit from JSON payload");
+
+        let mut tools = Vec::new();
+        for (command, metadata) in map {
+            // Ignore the _comment key because it contains invalid schema on it.
+            if command == "_comment" {
+                continue;
+            }
+
+            let mut tool: ToolMetadata = match serde_json::from_value(metadata) {
+                Ok(okay) => okay,
+                Err(error) => panic!("failed to deserialize tool {command:?}: {error:#?}"),
+            };
+
+            // Use the associated key for a name if the name field feels empty.
+            if tool.name.is_empty() || tool.name.chars().all(|v| v.is_whitespace()) {
+                tool.name = command.clone();
+            }
+
+            // If `default` key is not defined in packages field then insert it
+            // with the associated key as a value.
+            if !tool.packages.contains_key("default") {
+                tool.packages.insert("default".to_string(), command.clone());
+            }
+
+            tool.command = command;
+            tool.description = tool.description.trim().to_string();
+            tools.push(tool);
+        }
+
+        Ok(Self { tools })
+    }
+
     /// Returns a static reference to the predefined, compile-time bundled toolkit.
     ///
     /// This function lazily loads and deserializes the JSON file located at
@@ -42,45 +79,19 @@ impl Toolkit {
     #[must_use]
     pub fn default() -> &'static Self {
         static INNER_VALUE: LazyLock<Toolkit> = LazyLock::new(|| {
-            let toolkit_json = include_str!("../../assets/default/toolkit.json");
-            let map: BTreeMap<String, Json> = serde_json::from_str(toolkit_json)
-                .expect("failed to deserialize built-in default toolkit.json");
+            let toolkit = Toolkit::from_json(include_str!("../../assets/default/toolkit.json"))
+                .context("failed to load built-in default toolkit.json")
+                .unwrap();
 
-            let mut tools = Vec::new();
-            for (command, metadata) in map {
-                // Ignore the _comment key because it contains invalid schema on it.
-                if command == "_comment" {
-                    continue;
-                }
-
-                let mut tool: ToolMetadata = match serde_json::from_value(metadata) {
-                    Ok(okay) => okay,
-                    Err(error) => panic!("failed to deserialize tool {command:?}: {error:#?}"),
-                };
-
-                // Use the associated key for a name if the name field feels empty.
-                if tool.name.is_empty() || tool.name.chars().all(|v| v.is_whitespace()) {
-                    tool.name = tool.command.clone();
-                }
-
-                // If `default` key is not defined in packages field then insert it
-                // with the associated key as a value.
-                if !tool.packages.contains_key("default") {
-                    tool.packages.insert("default".to_string(), command.clone());
-                }
-
-                tool.command = command;
-                tool.description = tool.description.trim().to_string();
-
+            for tool in toolkit.tools() {
                 debug!("found built-in tool: {tool:?}");
-                tools.push(tool);
             }
 
             debug!(
                 "successfully loaded built-in toolkit; loaded {} tool(s)",
-                tools.len()
+                toolkit.tools().len()
             );
-            Toolkit { tools }
+            toolkit
         });
 
         &INNER_VALUE
@@ -94,6 +105,29 @@ impl Toolkit {
     pub fn tools(&self) -> &[ToolMetadata] {
         &self.tools
     }
+
+    /// Attempts to serialize into a format that follows with
+    /// `assets/default/toolkit.json` in the program repository.
+    #[must_use]
+    pub fn serialize_into_json(&self) -> String {
+        let mut map = HashMap::new();
+        for tool in self.tools.iter() {
+            let mut value = json!({
+                "description": tool.description,
+                "packages": tool.packages,
+                "windows": tool.windows,
+                "downloads": tool.downloads,
+            });
+
+            if !tool.name.is_empty() {
+                let object = value.as_object_mut().unwrap();
+                object.insert("name".to_string(), tool.name.clone().into());
+            }
+
+            map.insert(tool.command.clone(), value);
+        }
+        serde_json::to_string(&map).unwrap()
+    }
 }
 
 /// Metadata describing a tool provided by a toolkit.
@@ -101,7 +135,6 @@ impl Toolkit {
 /// This struct carries the information needed to identify, display and
 /// install or invoke a tool exposed by a toolkit.
 #[derive(Debug, Deserialize, Builder, Clone, PartialEq, Eq)]
-#[builder(builder_type(vis = "pub(crate)"))]
 pub struct ToolMetadata {
     /// The full name of the provided tool from the toolkit
     #[serde(default)]
@@ -140,7 +173,7 @@ pub struct ToolMetadata {
 }
 
 /// Windows-specific metadata on how a tool should run in Windows.
-#[derive(Debug, Deserialize, Builder, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Builder, Clone, Default, PartialEq, Eq, Serialize)]
 #[builder(builder_type(vis = "pub(crate)"))]
 pub struct ToolWindowsMetadata {
     /// Candidate execution absolute paths of
@@ -153,8 +186,7 @@ pub struct ToolWindowsMetadata {
 /// Each field contains an optional URL pointing to the installer or binary
 /// for the corresponding platform. If a platform is not supported, its
 /// field can be `None`.
-#[derive(Debug, Default, Builder, Clone, PartialEq, Eq, Deserialize)]
-#[builder(builder_type(vis = "pub(crate)"))]
+#[derive(Debug, Default, Builder, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ToolPlatformDownloads {
     /// Download URL for Windows, if available.
     pub windows: Option<String>,
