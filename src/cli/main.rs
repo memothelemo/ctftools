@@ -10,6 +10,8 @@ use ctftools::registry::Toolkit;
 mod action;
 mod ansi;
 mod check_tools;
+mod install_tools;
+mod make_install_tasks;
 mod options;
 
 use crate::action::Action;
@@ -33,6 +35,8 @@ fn main() -> Result<()> {
     let mut action = match opts.command {
         Some(Command::Check) => Some(Action::CheckTools),
         Some(Command::InstallTools) => Some(Action::InstallTools),
+        #[cfg(debug_assertions)]
+        Some(Command::SerializeInstallTasks) => Some(Action::SerializeInstallTasks),
         None => None,
     };
 
@@ -67,10 +71,14 @@ fn main() -> Result<()> {
 
         let result = match action {
             Action::Tool(metadata) => todo!(),
-            Action::InstallTools => todo!(),
-            Action::InstallAllTools => todo!(),
+            Action::InstallTools => self::install_tools::install_missing(&term, &toolkit),
+            Action::InstallAllTools => self::install_tools::install_everything(&term, &toolkit),
             Action::CheckTools => self::check_tools::run(&term, &toolkit),
             Action::Exit => break,
+            #[cfg(debug_assertions)]
+            Action::SerializeInstallTasks => {
+                self::make_install_tasks::serialize_install_tasks(&term, tools_to_install)
+            }
         };
         term.show_cursor()?;
 

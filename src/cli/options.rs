@@ -19,4 +19,12 @@ pub struct Options {
 pub enum Command {
     Check,
     InstallTools,
+
+    /// **Development command**
+    ///
+    /// This allows to serialize the install tasks without using
+    /// `ctftools install`, that will actually install all of the missing
+    /// tools from the developer's environment.
+    #[cfg(debug_assertions)]
+    SerializeInstallTasks,
 }

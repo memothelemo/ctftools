@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -5,7 +6,7 @@ use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
 
 /// Represents an action to install a tool.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum InstallTask {
     /// Install the tool using a system package manager executable.
     PackageManager {

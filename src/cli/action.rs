@@ -9,6 +9,8 @@ pub enum Action<'a> {
     Tool(&'a ToolMetadata),
     InstallTools,
     InstallAllTools,
+    #[cfg(debug_assertions)]
+    SerializeInstallTasks,
     CheckTools,
     Exit,
 }
@@ -23,6 +25,8 @@ impl<'a> Action<'a> {
             Action::InstallAllTools => "💻 Install all tools (DEBUG)".into(),
             Action::InstallTools => "💻 Install missing tools".into(),
             Action::Exit => "🚪 Exit".into(),
+            #[cfg(debug_assertions)]
+            Action::SerializeInstallTasks => unreachable!(),
         }
     }
 
