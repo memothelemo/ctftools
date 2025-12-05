@@ -22,11 +22,10 @@ pub struct Toolkit {
 }
 
 impl Toolkit {
-    /// This internal function creates a new toolkit based on a
-    /// pre-defined list of tools used for testing the entire
-    /// program.
+    /// This function creates a new toolkit based on a pre-defined
+    /// list of tools used for testing the entire program.
     #[must_use]
-    pub(crate) fn new(tools: Vec<ToolMetadata>) -> Self {
+    pub fn new(tools: Vec<ToolMetadata>) -> Self {
         Self { tools }
     }
 
@@ -94,24 +93,6 @@ impl Toolkit {
     #[must_use]
     pub fn tools(&self) -> &[ToolMetadata] {
         &self.tools
-    }
-}
-
-impl Toolkit {
-    /// Checks the installation of every tool available in
-    /// this particular toolkit.
-    pub fn check_install(&self) -> anyhow::Result<Vec<(&ToolMetadata, bool)>> {
-        self.tools
-            .iter()
-            .map(|tool| {
-                let installed = crate::install::find_tool_executable(tool)?.is_some();
-                debug!(
-                    "checking tool installation for {:?}; result = {installed}",
-                    tool.command
-                );
-                Ok::<_, _>((tool, installed))
-            })
-            .collect::<_>()
     }
 }
 

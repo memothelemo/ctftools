@@ -4,9 +4,12 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Returns a pretty command from a Command type.
+/// Returns a human-readable representation of a command.
+///
+/// The returned string contains the program path (or name) followed by
+/// its arguments, separated by spaces.
 #[must_use]
-pub fn pretty_cmd(cmd: &Command) -> String {
+pub fn cmd_display(cmd: &Command) -> String {
     format!(
         "{} {}",
         cmd.get_program().to_string_lossy(),
@@ -36,7 +39,7 @@ pub fn supports_privilege_escalation() -> bool {
 
 /// This function tells whether the program is running in elevation mode.
 #[must_use]
-pub fn is_running_in_elevation() -> bool {
+pub fn running_in_elevation() -> bool {
     #[cfg(unix)]
     fn unix_impl() -> bool {
         use sudo::RunningAs;

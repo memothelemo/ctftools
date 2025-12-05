@@ -9,7 +9,7 @@ repository = "https://github.com/memothelemo/ctftools"
 
 [[bin]]
 name = "ctftools"
-path = "src/cli/main.rs"
+path = "src/bin/main.rs"
 
 [dependencies]
 anstream = "0.6.21"

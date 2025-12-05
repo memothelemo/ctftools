@@ -1,4 +1,4 @@
-pub mod exec;
+pub mod cli;
 pub mod install;
 pub mod pkg;
 pub mod registry;
