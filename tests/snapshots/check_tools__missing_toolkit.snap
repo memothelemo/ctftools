@@ -1,7 +1,0 @@
----
-source: tests/check_tools.rs
-expression: output
----
-* ❌ unknown-tool
-Missing tools: 1/1
-You may want to return the selector again to install the missing tools.

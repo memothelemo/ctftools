@@ -1,6 +1,0 @@
----
-source: tests/check_tools.rs
-expression: output
----
-* ✅ ping
-All done! 1/1 tools installed.

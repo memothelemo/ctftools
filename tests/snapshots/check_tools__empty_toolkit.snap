@@ -1,5 +1,0 @@
----
-source: tests/check_tools.rs
-expression: output
----
-All done! 0/0 tools installed.

@@ -4,9 +4,7 @@ use std::path::PathBuf;
 use crate::registry::{ToolMetadata, Toolkit};
 use crate::util::which_opt;
 
-pub mod planner;
 pub mod task;
-
 pub use self::task::{InstallTask, InstallTaskError};
 
 /// Checks which tools in a `Toolkit` are installed on the system.
