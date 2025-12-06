@@ -41,6 +41,19 @@ pub enum InstallTask {
     },
 }
 
+/// Represents the result of planning an installation for a single tool.
+///
+/// This enum indicates whether an [`InstallTask`] could be successfully created
+/// or if the tool cannot be installed through any of the available methods.
+#[derive(Debug, PartialEq, Eq)]
+pub enum InstallPlanResult<'a> {
+    /// An installation task was successfully created.
+    Task(InstallTask),
+
+    /// The tool could not be installed, with a reason.
+    CannotInstall(&'a ToolMetadata, InstallTaskError),
+}
+
 /// Errors that can occur while creating an [`InstallTask`] from a tool.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum InstallTaskError {
@@ -195,7 +208,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
-    use crate::install::task::{InstallTask, InstallTaskError};
+    use crate::install_task::{InstallTask, InstallTaskError};
     use crate::pkg::PackageManager;
     use crate::registry::{ToolMetadata, ToolPlatformDownloads};
 

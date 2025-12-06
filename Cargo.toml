@@ -9,7 +9,7 @@ repository = "https://github.com/memothelemo/ctftools"
 
 [[bin]]
 name = "ctftools"
-path = "src/cli/main.rs"
+path = "src/bin/main.rs"
 
 [dependencies]
 anstream = "0.6.21"
@@ -40,3 +40,4 @@ features = ["Win32_Security", "Win32_System_Threading"]
 assert_cmd = "2.1.1"
 insta = "1.44.3"
 pretty_assertions = "1.4.1"
+static_assertions = "1.1.0"

@@ -1,0 +1,8 @@
+---
+source: tests/check_tools.rs
+expression: output
+---
+* ❌ intangible
+* ✅ tangible
+Missing tools: 1/2
+You may want to return the selector again to install the missing tools.
