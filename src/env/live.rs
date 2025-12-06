@@ -2,6 +2,7 @@ use anyhow::Result;
 use log::warn;
 use std::path::PathBuf;
 use std::sync::mpsc;
+use std::time::Instant;
 
 use crate::env::Environment;
 use crate::install::{InstallProgress, InstallTask, InstallTracker};
@@ -94,11 +95,13 @@ impl Environment for LiveEnvironment {
         let (tracker, sender) = InstallTracker::new();
         std::thread::spawn(move || {
             for task in tasks {
+                let tool_name = task.tool_name().to_string();
                 let Err(error) = run_install_task(&sender, task) else {
                     continue;
                 };
 
-                if let Err(error) = sender.send(InstallProgress::Error(error)) {
+                let progress = InstallProgress::Error { tool_name, error };
+                if let Err(error) = sender.send(progress) {
                     warn!("failed to send install error report to the main thread: {error}");
                 }
             }
@@ -108,21 +111,30 @@ impl Environment for LiveEnvironment {
 }
 
 fn run_install_task(sender: &mpsc::Sender<InstallProgress>, task: InstallTask) -> Result<()> {
+    let now = Instant::now();
+    let tool_name = task.tool_name().to_string();
+
     match task {
         InstallTask::PackageManager {
-            exec, arguments, ..
+            exec,
+            arguments,
+            tool_name,
+            ..
         } => {
-            let cmd = crate::util::run_cmd(exec, arguments);
-            let cmd_pretty_name = cmd_display(&cmd);
+            let cmd = crate::util::make_cmd(exec, arguments);
             sender.send(InstallProgress::Command {
-                text: cmd_pretty_name,
+                text: cmd_display(&cmd),
+                tool_name: tool_name.clone(),
             })?;
-
-            std::thread::sleep(std::time::Duration::from_secs(3));
         }
         InstallTask::Download { .. } => todo!(),
         InstallTask::AUR { .. } => todo!(),
     }
+
+    sender.send(InstallProgress::Success {
+        elapsed: now.elapsed(),
+        tool_name,
+    })?;
 
     Ok(())
 }

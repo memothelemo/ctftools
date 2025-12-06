@@ -7,7 +7,6 @@ use log::warn;
 use crate::cli::ansi::*;
 use crate::env::Environment;
 use crate::install::InstallPlanResult;
-use crate::install::InstallProgress;
 use crate::registry::{ToolMetadata, Toolkit};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,34 +71,49 @@ pub fn install(
         }
     }
 
-    // // If we already installed all of the tools in the toolkit,
-    // // we can print out the message to the user.
-    // if tasks.is_empty() {
-    //     println!("All required tool(s) are already installed.");
-    //     return Ok(());
+    // If we already installed all of the tools in the toolkit,
+    // we can print out the message to the user.
+    if tasks.is_empty() {
+        if toolkit.tools().is_empty() {
+            println!("There are no tools requiring you to install.");
+        } else {
+            println!("All required tool(s) are already installed.");
+        }
+        return Ok(());
+    }
+
+    // // Log the missing tools so the user knows what's going with this command here
+    // debug!("installing {} tool(s)", tasks.len());
+    // eprintln!("⏳ {BOLD}Installing the following missing tools...{BOLD:#}");
+    // for task in tasks.iter() {
+    //     println!("{GRAY}* {}{GRAY:#}", task.tool_name());
+    // }
+    // eprintln!();
+
+    // let mut tracker = env.run_install_tasks(tasks)?;
+    // crate::signals::lock_terminate_signals();
+
+    // while let Some(message) = tracker.next() {
+    //     match message {
+    //         InstallProgress::Command { text, tool_name } => {
+    //             eprintln!("{BOLD}Installing {tool_name}{BOLD:#}: {GRAY}{text}{GRAY:#}");
+    //         }
+    //         InstallProgress::Success { tool_name, elapsed } => {
+    //             eprintln!(
+    //                 "{GREEN}{BOLD}✅ Successfully installed {tool_name} \
+    //                 ({elapsed:.2?}){BOLD:#}{GREEN:#}"
+    //             );
+    //         }
+    //         InstallProgress::Error { error, tool_name } => {
+    //             bail!(
+    //                 "Failed to install {tool_name} (you may \
+    //                 want to install it manually instead): {error}"
+    //             );
+    //         }
+    //     };
     // }
 
-    // Log the missing tools so the user knows what's going with this command here
-    debug!("installing {} tool(s)", tasks.len());
-    eprintln!("⏳ {BOLD}Installing the following missing tools...{BOLD:#}");
-    for task in tasks.iter() {
-        println!("{GRAY}* {}{GRAY:#}", task.tool_name());
-    }
-    eprintln!();
-
-    let mut tracker = env.run_install_tasks(tasks)?;
-    crate::signals::lock_terminate_signals();
-
-    while let Some(message) = tracker.next() {
-        match message {
-            InstallProgress::Command { text } => {
-                eprintln!("{GRAY}{text}{GRAY:#}");
-            }
-            InstallProgress::Error(error) => todo!(),
-        };
-    }
-
-    stderr.show_cursor()?;
-    crate::signals::unlock_terminate_signals();
+    // stderr.show_cursor()?;
+    // crate::signals::unlock_terminate_signals();
     Ok(())
 }

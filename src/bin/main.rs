@@ -29,7 +29,6 @@ fn main() -> Result<()> {
 
         Arc::new(MockEnvironment::builder().installed_tools(map).build())
     } else {
-        ctftools::signals::hook();
         Arc::new(LiveEnvironment::new()?)
     };
 

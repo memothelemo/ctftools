@@ -24,14 +24,8 @@ pub fn run(env: Arc<dyn Environment>, opts: Options, toolkit: Option<Toolkit>) -
     // Initialize logger
     init_logger();
 
-    // Prevent accidental termination via CTRL+C (unless we need to)
-    // if our environment is in live system.
     debug!("using environment: {env:?}");
-
     let stderr = Term::stderr();
-    if is_env_live {
-        ctrlc::set_handler(|| {}).context("failed to set handler for CTRL+C")?;
-    }
 
     // Load our toolkit to be used for the entire program's lifetime.
     let toolkit = init_maybe_custom_toolkit(&opts, toolkit)?;
