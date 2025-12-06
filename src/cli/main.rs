@@ -75,9 +75,9 @@ fn main() -> Result<()> {
             Action::InstallAllTools => self::install_tools::install_everything(&term, &toolkit),
             Action::CheckTools => self::check_tools::run(&term, &toolkit),
             Action::Exit => break,
-            #[cfg(debug_assertions)]
+            #[cfg(debug_assertions)] // This action is only available in debug builds
             Action::SerializeInstallTasks => {
-                self::make_install_tasks::serialize_install_tasks(&term, tools_to_install)
+                self::make_install_tasks::serialize_install_tasks(&term, &toolkit)
             }
         };
         term.show_cursor()?;
