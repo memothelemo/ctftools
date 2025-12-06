@@ -1,10 +1,13 @@
 use anyhow::Result;
+use log::warn;
 use std::path::PathBuf;
+use std::sync::mpsc;
 
 use crate::env::Environment;
+use crate::install::{InstallProgress, InstallTask, InstallTracker};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
-use crate::util::which_opt;
+use crate::util::{cmd_display, which_opt};
 
 #[derive(Debug)]
 pub struct LiveEnvironment {
@@ -86,6 +89,42 @@ impl Environment for LiveEnvironment {
 
         Ok(None)
     }
+
+    fn run_install_tasks(&self, tasks: Vec<InstallTask>) -> Result<InstallTracker> {
+        let (tracker, sender) = InstallTracker::new();
+        std::thread::spawn(move || {
+            for task in tasks {
+                let Err(error) = run_install_task(&sender, task) else {
+                    continue;
+                };
+
+                if let Err(error) = sender.send(InstallProgress::Error(error)) {
+                    warn!("failed to send install error report to the main thread: {error}");
+                }
+            }
+        });
+        Ok(tracker)
+    }
+}
+
+fn run_install_task(sender: &mpsc::Sender<InstallProgress>, task: InstallTask) -> Result<()> {
+    match task {
+        InstallTask::PackageManager {
+            exec, arguments, ..
+        } => {
+            let cmd = crate::util::run_cmd(exec, arguments);
+            let cmd_pretty_name = cmd_display(&cmd);
+            sender.send(InstallProgress::Command {
+                text: cmd_pretty_name,
+            })?;
+
+            std::thread::sleep(std::time::Duration::from_secs(3));
+        }
+        InstallTask::Download { .. } => todo!(),
+        InstallTask::AUR { .. } => todo!(),
+    }
+
+    Ok(())
 }
 
 #[derive(Clone)]

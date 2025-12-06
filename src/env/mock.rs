@@ -1,9 +1,11 @@
 use anyhow::Result;
 use bon::Builder;
+use dashmap::DashMap;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::env::Environment;
+use crate::install::{InstallTask, InstallTracker};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
 
@@ -13,7 +15,8 @@ pub struct MockEnvironment {
     aur_helper: Option<AurHelper>,
 
     #[builder(default)]
-    installed_tools: HashMap<String, PathBuf>,
+    #[builder(setters(vis = "", name = installed_tools_internal))]
+    installed_tools: DashMap<String, PathBuf>,
 }
 
 impl Environment for MockEnvironment {
@@ -26,7 +29,43 @@ impl Environment for MockEnvironment {
     }
 
     fn find_tool_executable(&self, tool: &ToolMetadata) -> Result<Option<PathBuf>> {
-        Ok(self.installed_tools.get(&tool.command).cloned())
+        Ok(self.installed_tools.get(&tool.command).map(|v| v.clone()))
+    }
+
+    fn run_install_tasks(&self, tasks: Vec<InstallTask>) -> Result<InstallTracker> {
+        // We don't need sender because `tracker.next()` will return None
+        // and it shows that all install tasks are complete.
+        let (tracker, ..) = InstallTracker::new();
+        for task in tasks {
+            match task {
+                InstallTask::PackageManager { tool_name, .. } => {
+                    self.installed_tools.insert(tool_name, PathBuf::new());
+                }
+                InstallTask::Download { tool_name, .. } => {
+                    self.installed_tools.insert(tool_name, PathBuf::new());
+                }
+                InstallTask::AUR { tool_name, .. } => {
+                    self.installed_tools.insert(tool_name, PathBuf::new());
+                }
+            }
+        }
+        Ok(tracker)
+    }
+}
+
+impl<S: mock_environment_builder::State> MockEnvironmentBuilder<S> {
+    pub fn installed_tools(
+        self,
+        tools: HashMap<String, PathBuf>,
+    ) -> MockEnvironmentBuilder<mock_environment_builder::SetInstalledTools<S>>
+    where
+        S::InstalledTools: mock_environment_builder::IsUnset,
+    {
+        let dashmap = DashMap::new();
+        for (key, value) in tools {
+            dashmap.insert(key, value);
+        }
+        self.installed_tools_internal(dashmap)
     }
 }
 
@@ -126,7 +165,8 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
-                sudo: true
+                sudo: true,
+                tool_name: "tool".to_string(),
             })
         );
     }
@@ -156,7 +196,8 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
-                sudo: true
+                sudo: true,
+                tool_name: "tool".to_string(),
             })
         );
 
@@ -173,7 +214,8 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
-                sudo: true
+                sudo: true,
+                tool_name: "tool".to_string(),
             })
         );
 
@@ -190,7 +232,8 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
-                sudo: false
+                sudo: false,
+                tool_name: "tool".to_string(),
             })
         );
     }
@@ -219,7 +262,8 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
-                sudo: false
+                sudo: false,
+                tool_name: "tool".to_string(),
             })
         );
 
@@ -246,7 +290,8 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
-                sudo: true
+                sudo: true,
+                tool_name: "tool".to_string(),
             })
         );
     }

@@ -7,6 +7,7 @@ use log::warn;
 use crate::cli::ansi::*;
 use crate::env::Environment;
 use crate::install::InstallPlanResult;
+use crate::install::InstallProgress;
 use crate::registry::{ToolMetadata, Toolkit};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +29,6 @@ pub fn install(
         return Ok(());
     }
 
-    stderr.hide_cursor()?;
     if env.pkg_manager().is_none() && env.is_live() {
         warn!(
             "It is recommened to install a package manager to automate \
@@ -54,6 +54,8 @@ pub fn install(
 
     // Filter out the outcome that thrown an error so we only have
     // successfully made tasks left.
+    stderr.hide_cursor()?;
+
     let mut tasks = Vec::new();
     for outcome in outcomes {
         match outcome {
@@ -80,6 +82,24 @@ pub fn install(
     // Log the missing tools so the user knows what's going with this command here
     debug!("installing {} tool(s)", tasks.len());
     eprintln!("⏳ {BOLD}Installing the following missing tools...{BOLD:#}");
+    for task in tasks.iter() {
+        println!("{GRAY}* {}{GRAY:#}", task.tool_name());
+    }
+    eprintln!();
 
+    let mut tracker = env.run_install_tasks(tasks)?;
+    crate::signals::lock_terminate_signals();
+
+    while let Some(message) = tracker.next() {
+        match message {
+            InstallProgress::Command { text } => {
+                eprintln!("{GRAY}{text}{GRAY:#}");
+            }
+            InstallProgress::Error(error) => todo!(),
+        };
+    }
+
+    stderr.show_cursor()?;
+    crate::signals::unlock_terminate_signals();
     Ok(())
 }

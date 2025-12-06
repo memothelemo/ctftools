@@ -2,7 +2,7 @@ use anyhow::Result;
 use log::debug;
 use std::path::PathBuf;
 
-use crate::install::{InstallPlanResult, InstallTask, InstallTaskError};
+use crate::install::{InstallPlanResult, InstallTask, InstallTaskError, InstallTracker};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::{ToolMetadata, Toolkit};
 
@@ -117,10 +117,13 @@ pub trait Environment: std::fmt::Debug {
                     if pkg_manager == PackageManager::Pacman
                         && matches!(task, InstallTask::AUR { .. })
                         && let Some((aur_helper, path_to_arh)) = self.aur_helper().clone()
+                        && let InstallTask::AUR {
+                            package_name,
+                            tool_name,
+                        } = task
                     {
-                        if let InstallTask::AUR { package_name } = task {
-                            task = InstallTask::from_aur(aur_helper, path_to_arh, package_name);
-                        }
+                        task =
+                            InstallTask::from_aur(aur_helper, path_to_arh, package_name, tool_name);
                     }
                     return InstallPlanResult::Task(task);
                 }
@@ -142,13 +145,7 @@ pub trait Environment: std::fmt::Debug {
         }
     }
 
-    fn run_install_task(&self, task: &InstallTask) -> Result<()> {
-        todo!()
-    }
-
-    fn run_install_task_inner(&self, task: &InstallTask) {
-        todo!()
-    }
+    fn run_install_tasks(&self, tasks: Vec<InstallTask>) -> Result<InstallTracker>;
 }
 
 #[cfg(test)]

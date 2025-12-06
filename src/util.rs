@@ -2,7 +2,15 @@ use anyhow::Result;
 use cfg_if::cfg_if;
 use std::ffi::OsStr;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
+
+pub fn run_cmd(exec: PathBuf, args: Vec<String>) -> Command {
+    let mut cmd = std::process::Command::new(exec);
+    cmd.args(args)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
+    cmd
+}
 
 /// Returns a human-readable representation of a command.
 ///
