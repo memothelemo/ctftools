@@ -11,9 +11,11 @@ pub enum Action<'a> {
     Tool(&'a ToolMetadata),
 
     /// Checks which tools in the toolkit are installed on the system.
+    #[clap(name = "check")]
     CheckTools,
 
     /// Installs any tools from the toolkit that are not currently installed.
+    #[clap(name = "install")]
     InstallMissingTools,
 
     /// (Debug) Forcibly reinstalls all tools from the toolkit.

@@ -33,7 +33,7 @@ impl Environment for MockEnvironment {
 #[cfg(test)]
 mod tests {
     use crate::env::{Environment, MockEnvironment};
-    use crate::install_task::{InstallPlanResult, InstallTask};
+    use crate::install::{InstallPlanResult, InstallTask};
     use crate::pkg::{AurHelper, PackageManager};
     use crate::registry::{ToolMetadata, Toolkit};
 

@@ -13,6 +13,7 @@ pub mod interactive;
 pub mod options;
 
 pub mod check_tools;
+pub mod install_tools;
 
 pub use self::action::Action;
 pub use self::options::Options;
@@ -69,11 +70,17 @@ pub fn try_run_action(
     stderr: &Term,
     toolkit: &Toolkit,
 ) -> Result<()> {
+    use self::install_tools::InstallGoal;
     match action {
         Action::Tool(..) => todo!(),
         Action::CheckTools => self::check_tools::run(env, stderr, toolkit),
-        Action::InstallMissingTools => todo!(),
-        Action::InstallAllTools => todo!(),
+        Action::InstallMissingTools => {
+            self::install_tools::install(env, InstallGoal::Missing, stderr, toolkit)
+        }
+        #[cfg(debug_assertions)]
+        Action::InstallAllTools => {
+            self::install_tools::install(env, InstallGoal::Everything, stderr, toolkit)
+        }
         Action::Exit => Ok(()),
     }
 }

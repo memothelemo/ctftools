@@ -2,7 +2,7 @@ use anyhow::Result;
 use log::debug;
 use std::path::PathBuf;
 
-use crate::install_task::{InstallPlanResult, InstallTask, InstallTaskError};
+use crate::install::{InstallPlanResult, InstallTask, InstallTaskError};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::{ToolMetadata, Toolkit};
 
@@ -92,7 +92,7 @@ pub trait Environment: std::fmt::Debug {
     /// installation strategy for each one.
     fn plan_install_tools<'t>(
         &self,
-        tools_to_install: &[&'t ToolMetadata],
+        tools_to_install: &'t [ToolMetadata],
     ) -> Vec<InstallPlanResult<'t>> {
         let mut outcomes = Vec::new();
         for tool in tools_to_install {
@@ -140,6 +140,14 @@ pub trait Environment: std::fmt::Debug {
             Ok(task) => InstallPlanResult::Task(task),
             Err(e) => InstallPlanResult::CannotInstall(tool, e),
         }
+    }
+
+    fn run_install_task(&self, task: &InstallTask) -> Result<()> {
+        todo!()
+    }
+
+    fn run_install_task_inner(&self, task: &InstallTask) {
+        todo!()
     }
 }
 

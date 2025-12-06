@@ -9,7 +9,7 @@ fn run_check_tools(installed_tools: &[&str], toolkit: &Toolkit) -> Output {
     Command::new(cargo_bin!("ctftools"))
         .args(["--custom-toolkit", &*toolkit])
         .args(["--mock-installed-tools", &*installed_tools])
-        .arg("check-tools")
+        .arg("check")
         .unwrap()
 }
 
