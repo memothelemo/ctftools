@@ -15,11 +15,12 @@ pub enum Action<'a> {
     CheckTools,
 
     /// Installs any tools from the toolkit that are not currently installed.
+    #[cfg(feature = "auto-install-tools")]
     #[clap(name = "install")]
     InstallMissingTools,
 
     /// (Debug) Forcibly reinstalls all tools from the toolkit.
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
     #[clap(name = "install-all")]
     InstallAllTools,
 
@@ -35,8 +36,9 @@ impl<'a> Action<'a> {
         match self {
             Action::Tool(meta) => format!("🔨 {}", meta.name).into(),
             Action::CheckTools => "🔎 Check which tools are installed".into(),
+            #[cfg(feature = "auto-install-tools")]
             Action::InstallMissingTools => "📦 Install missing tools".into(),
-            #[cfg(debug_assertions)]
+            #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
             Action::InstallAllTools => "🚀 Install all tools".into(),
             Action::Exit => "🚪 Exit".into(),
         }
@@ -45,7 +47,10 @@ impl<'a> Action<'a> {
     /// Generates a list of available actions for the user to choose from.
     #[must_use]
     pub fn choices(toolkit: &'a Toolkit) -> Vec<Action<'a>> {
-        let last = [Action::CheckTools, Action::InstallMissingTools];
+        let last = vec![Action::CheckTools];
+
+        #[cfg(feature = "auto-install-tools")]
+        last.push(Action::InstallMissingTools);
 
         let mut choices: Vec<Action<'a>> = toolkit
             .tools()
@@ -54,8 +59,9 @@ impl<'a> Action<'a> {
             .chain(last)
             .collect();
 
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
         choices.push(Action::InstallAllTools);
+
         choices.push(Action::Exit);
         choices
     }

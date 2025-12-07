@@ -1,5 +1,0 @@
----
-source: tests/install_missing_tools.rs
-expression: stdout
----
-All required tool(s) are empty.

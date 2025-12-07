@@ -7,6 +7,9 @@ version = "0.1.0-alpha.1"
 edition = "2024"
 repository = "https://github.com/memothelemo/ctftools"
 
+[features]
+auto-install-tools = []
+
 [[bin]]
 name = "ctftools"
 path = "src/bin/main.rs"

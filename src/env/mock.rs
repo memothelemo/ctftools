@@ -3,16 +3,23 @@ use bon::Builder;
 use dashmap::DashMap;
 use std::collections::HashMap;
 use std::path::PathBuf;
+
+#[cfg(feature = "auto-install-tools")]
 use std::time::Duration;
 
 use crate::env::Environment;
-use crate::install::{InstallProgress, InstallTask};
-use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
+
+#[cfg(feature = "auto-install-tools")]
+use crate::install::{InstallProgress, InstallTask};
+#[cfg(feature = "auto-install-tools")]
+use crate::pkg::{AurHelper, PackageManager};
 
 #[derive(Debug, Builder)]
 pub struct MockEnvironment {
+    #[cfg(feature = "auto-install-tools")]
     pkg_manager: Option<PackageManager>,
+    #[cfg(feature = "auto-install-tools")]
     aur_helper: Option<AurHelper>,
 
     #[builder(default)]
@@ -35,10 +42,12 @@ impl Environment for MockEnvironment {
         self.supports_privilege_escalation
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn pkg_manager(&self) -> Option<(PackageManager, PathBuf)> {
         self.pkg_manager.map(|pm| (pm, PathBuf::from("")))
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn aur_helper(&self) -> Option<(AurHelper, PathBuf)> {
         self.aur_helper.map(|pm| (pm, PathBuf::from("")))
     }
@@ -47,6 +56,7 @@ impl Environment for MockEnvironment {
         Ok(self.installed_tools.get(&tool.command).map(|v| v.clone()))
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn run_install_task(
         &self,
         task: &InstallTask,
@@ -83,9 +93,12 @@ impl<S: mock_environment_builder::State> MockEnvironmentBuilder<S> {
 #[cfg(test)]
 mod tests {
     use crate::env::{Environment, MockEnvironment};
-    use crate::install::{InstallPlanResult, InstallTask};
-    use crate::pkg::{AurHelper, PackageManager};
     use crate::registry::{ToolMetadata, Toolkit};
+
+    #[cfg(feature = "auto-install-tools")]
+    use crate::install::{InstallPlanResult, InstallTask};
+    #[cfg(feature = "auto-install-tools")]
+    use crate::pkg::{AurHelper, PackageManager};
 
     use maplit::hashmap;
     use pretty_assertions::assert_eq;
@@ -154,6 +167,7 @@ mod tests {
         assert_eq!(env.find_tool_executable(&non_existing_tool).unwrap(), None);
     }
 
+    #[cfg(feature = "auto-install-tools")]
     #[test]
     fn test_plan_install_tool_with_provided_default_package() {
         let tool = ToolMetadata::builder()
@@ -182,6 +196,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "auto-install-tools")]
     #[test]
     fn test_plan_install_tool_with_specific_package_names() {
         let tool = ToolMetadata::builder()
@@ -249,6 +264,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "auto-install-tools")]
     #[test]
     fn test_plan_install_tool_with_aur_support() {
         // Test case: if we don't have an equivalent package in pacman

@@ -41,10 +41,13 @@ pub fn run(env: &dyn Environment, stderr: &Term, toolkit: &Toolkit) -> Result<()
     } else {
         let missing = total - installed_count;
         println!("{RED}{BOLD}Missing tools: {missing}/{total}{BOLD:#}{RED:#}");
+        #[cfg(feature = "auto-install-tools")]
         println!(
             "{GRAY}{BOLD}You may want to return the selector again to install \
             the missing tools.{BOLD:#}{GRAY:#}"
         );
+        #[cfg(not(feature = "auto-install-tools"))]
+        println!("{GRAY}Please install these missing tools manually.{GRAY:#}");
     }
 
     Ok(())

@@ -1,9 +1,13 @@
 use anyhow::Result;
-use log::debug;
 use std::path::PathBuf;
 
+#[cfg(feature = "auto-install-tools")]
 use crate::install::{InstallPlanResult, InstallProgress, InstallTask, InstallTaskError};
+#[cfg(feature = "auto-install-tools")]
 use crate::pkg::{AurHelper, PackageManager};
+#[cfg(feature = "auto-install-tools")]
+use log::debug;
+
 use crate::registry::{ToolMetadata, Toolkit};
 
 pub mod live;
@@ -37,6 +41,7 @@ pub trait Environment: std::fmt::Debug {
     /// Gets the current [package manager] along with its binary path of the environment.
     ///
     /// [package manager]: PackageManager
+    #[cfg(feature = "auto-install-tools")]
     #[must_use]
     fn pkg_manager(&self) -> Option<(PackageManager, PathBuf)>;
 
@@ -45,6 +50,7 @@ pub trait Environment: std::fmt::Debug {
     /// This is only relevant on Arch Linux systems.
     ///
     /// [AUR helper]: AurHelper
+    #[cfg(feature = "auto-install-tools")]
     #[must_use]
     fn aur_helper(&self) -> Option<(AurHelper, PathBuf)>;
 
@@ -81,6 +87,7 @@ pub trait Environment: std::fmt::Debug {
     ///
     /// This method first checks the installation status of all tools and then
     /// generates a plan for the missing ones.
+    #[cfg(feature = "auto-install-tools")]
     fn plan_install_missing_tools<'t>(
         &self,
         toolkit: &'t Toolkit,
@@ -98,6 +105,7 @@ pub trait Environment: std::fmt::Debug {
     ///
     /// This method iterates through the provided tools and determines the best
     /// installation strategy for each one.
+    #[cfg(feature = "auto-install-tools")]
     fn plan_install_tools<'t>(
         &self,
         tools_to_install: &'t [ToolMetadata],
@@ -117,6 +125,7 @@ pub trait Environment: std::fmt::Debug {
     /// This is the core planning logic, which attempts to create an [`InstallTask`]
     /// by first checking for a package manager and then falling back to direct
     /// downloads if necessary.
+    #[cfg(feature = "auto-install-tools")]
     fn plan_install_tool<'t>(&self, tool: &'t ToolMetadata) -> InstallPlanResult<'t> {
         if let Some((pkg_manager, path_to_pkgm)) = self.pkg_manager().clone() {
             match InstallTask::from_package_manager(pkg_manager, path_to_pkgm, tool) {
@@ -153,6 +162,7 @@ pub trait Environment: std::fmt::Debug {
         }
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn run_install_task(
         &self,
         task: &InstallTask,

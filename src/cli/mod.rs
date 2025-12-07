@@ -13,6 +13,7 @@ pub mod interactive;
 pub mod options;
 
 pub mod check_tools;
+#[cfg(feature = "auto-install-tools")]
 pub mod install_tools;
 
 pub use self::action::Action;
@@ -64,14 +65,16 @@ pub fn try_run_action(
     stderr: &Term,
     toolkit: &Toolkit,
 ) -> Result<()> {
+    #[cfg(feature = "auto-install-tools")]
     use self::install_tools::InstallGoal;
     match action {
         Action::Tool(..) => todo!(),
         Action::CheckTools => self::check_tools::run(env, stderr, toolkit),
+        #[cfg(feature = "auto-install-tools")]
         Action::InstallMissingTools => {
             self::install_tools::install(env, InstallGoal::Missing, stderr, toolkit)
         }
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
         Action::InstallAllTools => {
             self::install_tools::install(env, InstallGoal::Everything, stderr, toolkit)
         }

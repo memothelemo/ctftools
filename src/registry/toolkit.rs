@@ -106,6 +106,13 @@ impl Toolkit {
     pub fn serialize_into_json(&self) -> String {
         let mut map = HashMap::new();
         for tool in self.tools.iter() {
+            #[cfg(not(feature = "auto-install-tools"))]
+            let mut value = json!({
+                "description": tool.description,
+                "windows": tool.windows,
+            });
+
+            #[cfg(feature = "auto-install-tools")]
             let mut value = json!({
                 "description": tool.description,
                 "packages": tool.packages,
@@ -145,6 +152,7 @@ pub struct ToolMetadata {
     /// A mapping from package manager identifier as a key to its
     /// equivalent package manager that provides the tool for that
     /// package manager.
+    #[cfg(feature = "auto-install-tools")]
     #[builder(default)]
     #[serde(default)]
     pub packages: HashMap<String, String>,
@@ -161,6 +169,7 @@ pub struct ToolMetadata {
     /// different operating systems if the tool cannot be installed
     /// using an operating system automatically through a
     /// package manager.
+    #[cfg(feature = "auto-install-tools")]
     #[builder(default)]
     #[serde(default)]
     pub downloads: ToolPlatformDownloads,

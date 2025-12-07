@@ -1,8 +1,0 @@
----
-source: tests/install_missing_tools.rs
-expression: output
----
-⚠️ WARNING: You are running ctftools with a mocked system environment. This feature is intended for automated testing and may result unexpected behavior.
-
-CTF Tool Selector (https://github.com/memothelemo/ctftools)
-⚠️ Could not install 'foo': "foo" cannot be installed automatically

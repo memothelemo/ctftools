@@ -1,16 +1,24 @@
 use anyhow::Result;
+use cfg_if::cfg_if;
 use std::path::PathBuf;
 
 use crate::env::Environment;
-use crate::install::live::{perform_task_via_download, perform_task_via_pkg_manager};
-use crate::install::{InstallProgress, InstallTask};
-use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
 use crate::util::which_opt;
 
+cfg_if! {
+    if #[cfg(feature = "auto-install-tools")] {
+        use crate::install::live::{perform_task_via_download, perform_task_via_pkg_manager};
+        use crate::install::{InstallProgress, InstallTask};
+        use crate::pkg::{AurHelper, PackageManager};
+    }
+}
+
 #[derive(Debug)]
 pub struct LiveEnvironment {
+    #[cfg(feature = "auto-install-tools")]
     pkg_manager: Option<WithPath<PackageManager>>,
+    #[cfg(feature = "auto-install-tools")]
     aur_helper: Option<WithPath<AurHelper>>,
 }
 
@@ -20,7 +28,9 @@ impl LiveEnvironment {
     /// Arch Linux or has an AUR helper binary present)
     pub fn new() -> Result<Self> {
         Ok(Self {
+            #[cfg(feature = "auto-install-tools")]
             pkg_manager: PackageManager::detect()?.map(Into::into),
+            #[cfg(feature = "auto-install-tools")]
             aur_helper: AurHelper::detect()?.map(Into::into),
         })
     }
@@ -28,6 +38,7 @@ impl LiveEnvironment {
     /// Creates a new [`LiveEnvironment`] with a package manager present.
     ///
     /// [AUR helper] will not be present at all times once created.
+    #[cfg(feature = "auto-install-tools")]
     #[must_use]
     pub fn with_pkg_manager(pm: PackageManager, path: PathBuf) -> Self {
         Self {
@@ -37,6 +48,7 @@ impl LiveEnvironment {
     }
 
     /// Creates a new [`LiveEnvironment`] with no package manager present.
+    #[cfg(feature = "auto-install-tools")]
     #[must_use]
     pub fn without_pkg_manager() -> Self {
         Self {
@@ -59,10 +71,12 @@ impl Environment for LiveEnvironment {
         crate::util::supports_privilege_escalation()
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn pkg_manager(&self) -> Option<(PackageManager, PathBuf)> {
         self.pkg_manager.as_ref().cloned().map(WithPath::into_inner)
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn aur_helper(&self) -> Option<(AurHelper, PathBuf)> {
         self.aur_helper.as_ref().cloned().map(WithPath::into_inner)
     }
@@ -97,6 +111,7 @@ impl Environment for LiveEnvironment {
         Ok(None)
     }
 
+    #[cfg(feature = "auto-install-tools")]
     fn run_install_task(
         &self,
         task: &InstallTask,
@@ -112,42 +127,47 @@ impl Environment for LiveEnvironment {
     }
 }
 
-#[derive(Clone)]
-struct WithPath<T> {
-    inner: T,
-    path: PathBuf,
-}
+cfg_if! {
+    if #[cfg(feature = "auto-install-tools")] {
+        #[derive(Clone)]
+        struct WithPath<T> {
+            inner: T,
+            path: PathBuf,
+        }
 
-impl<T> WithPath<T> {
-    #[must_use]
-    pub fn into_inner(self) -> (T, PathBuf) {
-        (self.inner, self.path)
+        impl<T> WithPath<T> {
+            #[must_use]
+            pub fn into_inner(self) -> (T, PathBuf) {
+                (self.inner, self.path)
+            }
+        }
+
+        impl<T> From<(T, PathBuf)> for WithPath<T> {
+            fn from((inner, path): (T, PathBuf)) -> Self {
+                Self { inner, path }
+            }
+        }
+
+        impl<T: std::fmt::Debug> std::fmt::Debug for WithPath<T> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_map()
+                    .entry(&"inner", &self.inner)
+                    .entry(&"path", &self.path)
+                    .finish()
+            }
+        }
+
+        impl<T> std::ops::Deref for WithPath<T> {
+            type Target = T;
+
+            fn deref(&self) -> &Self::Target {
+                &self.inner
+            }
+        }
     }
 }
 
-impl<T> From<(T, PathBuf)> for WithPath<T> {
-    fn from((inner, path): (T, PathBuf)) -> Self {
-        Self { inner, path }
-    }
-}
-
-impl<T: std::fmt::Debug> std::fmt::Debug for WithPath<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_map()
-            .entry(&"inner", &self.inner)
-            .entry(&"path", &self.path)
-            .finish()
-    }
-}
-
-impl<T> std::ops::Deref for WithPath<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
+#[cfg(all(windows, feature = "auto-install-tools"))]
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
