@@ -2,15 +2,14 @@ use anyhow::{Context, Result};
 use bon::Builder;
 use log::debug;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value as Json, json};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
 /// A collection of tool definitions that make up the user's toolkit.
 ///
 /// The [`Toolkit`] struct represents a set of external CTF tools that the program
-/// knows about. These definitions are loaded from a compile-time bundled JSON
+/// knows about. These definitions are loaded from a compile-time bundled YAML
 /// file and contain metadata describing each tool—its command, description,
 /// supported package managers, and platform-specific details.
 ///
@@ -30,10 +29,10 @@ impl Toolkit {
         Self { tools }
     }
 
-    /// Deserializes the JSON from a given string into a toolkit.
-    pub fn from_json(json: &str) -> Result<Self> {
-        let map: BTreeMap<String, Json> = serde_json::from_str(json)
-            .expect("failed to deserialize built-in toolkit from JSON payload");
+    /// Deserializes the YAML from a given string into a toolkit.
+    pub fn from_yaml(yaml: &str) -> Result<Self> {
+        let map: BTreeMap<String, serde_yml::Value> = serde_yml::from_str(yaml)
+            .expect("failed to deserialize built-in toolkit from YAML payload");
 
         let mut tools = Vec::new();
         for (command, metadata) in map {
@@ -42,7 +41,7 @@ impl Toolkit {
                 continue;
             }
 
-            let mut tool: ToolMetadata = match serde_json::from_value(metadata) {
+            let mut tool: ToolMetadata = match serde_yml::from_value(metadata) {
                 Ok(okay) => okay,
                 Err(error) => panic!("failed to deserialize tool {command:?}: {error:#?}"),
             };
@@ -62,19 +61,19 @@ impl Toolkit {
 
     /// Returns a static reference to the predefined, compile-time bundled toolkit.
     ///
-    /// This function lazily loads and deserializes the JSON file located at
-    /// `assets/default/toolkit.json` in the program repository, then caches
+    /// This function lazily loads and deserializes the YAML file located at
+    /// `assets/default/toolkit.yml` in the program repository, then caches
     /// the result for all future calls. The loaded data defines the default
     /// CTF tool registry shipped with the program.
     ///
     /// This function may panic if there's something wrong with the
-    /// deserialization process from `assets/default/toolkit.json` file.
+    /// deserialization process from `assets/default/toolkit.yml` file.
     #[allow(clippy::should_implement_trait)]
     #[must_use]
     pub fn default() -> &'static Self {
         static INNER_VALUE: LazyLock<Toolkit> = LazyLock::new(|| {
-            let toolkit = Toolkit::from_json(include_str!("../../assets/default/toolkit.json"))
-                .context("failed to load built-in default toolkit.json")
+            let toolkit = Toolkit::from_yaml(include_str!("../../assets/default/toolkit.yml"))
+                .context("failed to load built-in default toolkit.yml")
                 .unwrap();
 
             for tool in toolkit.tools() {
@@ -101,33 +100,48 @@ impl Toolkit {
     }
 
     /// Attempts to serialize into a format that follows with
-    /// `assets/default/toolkit.json` in the program repository.
+    /// `assets/default/toolkit.yml` in the program repository.
     #[must_use]
-    pub fn serialize_into_json(&self) -> String {
-        let mut map = HashMap::new();
+    pub fn serialize_into_yml(&self) -> String {
+        let mut map = BTreeMap::new();
         for tool in self.tools.iter() {
             #[cfg(not(feature = "auto-install-tools"))]
-            let mut value = json!({
-                "description": tool.description,
-                "windows": tool.windows,
-            });
+            let mut value = {
+                let mut tool_map = serde_yml::Mapping::new();
+                tool_map.insert("description".into(), tool.description.clone().into());
+                tool_map.insert(
+                    "windows".into(),
+                    serde_yml::to_value(&tool.windows).unwrap(),
+                );
+                tool_map
+            };
 
             #[cfg(feature = "auto-install-tools")]
-            let mut value = json!({
-                "description": tool.description,
-                "packages": tool.packages,
-                "windows": tool.windows,
-                "downloads": tool.downloads,
-            });
+            let mut value = {
+                let mut tool_map = serde_yml::Mapping::new();
+                tool_map.insert("description".into(), tool.description.clone().into());
+                tool_map.insert(
+                    "packages".into(),
+                    serde_yml::to_value(&tool.packages).unwrap(),
+                );
+                tool_map.insert(
+                    "windows".into(),
+                    serde_yml::to_value(&tool.windows).unwrap(),
+                );
+                tool_map.insert(
+                    "downloads".into(),
+                    serde_yml::to_value(&tool.downloads).unwrap(),
+                );
+                tool_map
+            };
 
             if !tool.name.is_empty() {
-                let object = value.as_object_mut().unwrap();
-                object.insert("name".to_string(), tool.name.clone().into());
+                value.insert("name".into(), tool.name.clone().into());
             }
 
             map.insert(tool.command.clone(), value);
         }
-        serde_json::to_string(&map).unwrap()
+        serde_yml::to_string(&map).unwrap()
     }
 }
 
@@ -142,8 +156,13 @@ pub struct ToolMetadata {
     pub name: String,
 
     /// The command or invocation used to run the tool
-    #[serde(default)]
+    #[serde(skip)]
     pub command: String,
+
+    /// A list of commands that can be used as a guide of running a tool.
+    #[builder(default)]
+    #[serde(default)]
+    pub examples: Vec<String>,
 
     /// A short, human-readable description summarizing the tool
     #[builder(default)]

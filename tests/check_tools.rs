@@ -3,7 +3,7 @@ use ctftools::registry::{ToolMetadata, Toolkit};
 use std::process::Output;
 
 fn run_check_tools(installed_tools: &[&str], toolkit: &Toolkit) -> Output {
-    let toolkit = toolkit.serialize_into_json();
+    let toolkit = toolkit.serialize_into_yml();
     let installed_tools = installed_tools.join(",");
 
     Command::new(cargo_bin!("ctftools"))

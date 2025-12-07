@@ -1,4 +1,5 @@
 use anstyle::Style;
+#[allow(unused)]
 use anyhow::{Context, Result};
 use console::Term;
 use log::{debug, info};
@@ -15,6 +16,7 @@ pub mod options;
 pub mod check_tools;
 #[cfg(feature = "auto-install-tools")]
 pub mod install_tools;
+pub mod run_tool;
 
 pub use self::action::Action;
 pub use self::options::Options;
@@ -68,7 +70,7 @@ pub fn try_run_action(
     #[cfg(feature = "auto-install-tools")]
     use self::install_tools::InstallGoal;
     match action {
-        Action::Tool(..) => todo!(),
+        Action::Tool(tool) => self::run_tool::run(env, stderr, tool),
         Action::CheckTools => self::check_tools::run(env, stderr, toolkit),
         #[cfg(feature = "auto-install-tools")]
         Action::InstallMissingTools => {
@@ -86,6 +88,7 @@ fn debug_enabled() -> bool {
     std::env::var("CTFTOOLS_DEBUG").as_deref().unwrap_or("0") != "0"
 }
 
+#[allow(unused)]
 fn init_maybe_custom_toolkit(opts: &Options, existing_toolkit: Option<Toolkit>) -> Result<Toolkit> {
     if let Some(toolkit) = existing_toolkit {
         debug!(
@@ -97,7 +100,7 @@ fn init_maybe_custom_toolkit(opts: &Options, existing_toolkit: Option<Toolkit>) 
 
     #[cfg(debug_assertions)]
     if let Some(json) = opts.custom_toolkit.as_ref() {
-        let toolkit = Toolkit::from_json(json).context("could not load custom toolkit")?;
+        let toolkit = Toolkit::from_yaml(json).context("could not load custom toolkit")?;
         debug!(
             "using custom toolkit; loaded tool(s) = {}",
             toolkit.tools().len()
