@@ -3,9 +3,10 @@ use bon::Builder;
 use dashmap::DashMap;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use crate::env::Environment;
-use crate::install::{InstallTask, InstallTracker};
+use crate::install::{InstallProgress, InstallTask};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
 
@@ -17,9 +18,23 @@ pub struct MockEnvironment {
     #[builder(default)]
     #[builder(setters(vis = "", name = installed_tools_internal))]
     installed_tools: DashMap<String, PathBuf>,
+
+    #[builder(default = true)]
+    running_in_elevation: bool,
+
+    #[builder(default = true)]
+    supports_privilege_escalation: bool,
 }
 
 impl Environment for MockEnvironment {
+    fn running_in_elevation(&self) -> bool {
+        self.running_in_elevation
+    }
+
+    fn supports_privilege_escalation(&self) -> bool {
+        self.supports_privilege_escalation
+    }
+
     fn pkg_manager(&self) -> Option<(PackageManager, PathBuf)> {
         self.pkg_manager.map(|pm| (pm, PathBuf::from("")))
     }
@@ -32,24 +47,20 @@ impl Environment for MockEnvironment {
         Ok(self.installed_tools.get(&tool.command).map(|v| v.clone()))
     }
 
-    fn run_install_tasks(&self, tasks: Vec<InstallTask>) -> Result<InstallTracker> {
-        // We don't need sender because `tracker.next()` will return None
-        // and it shows that all install tasks are complete.
-        let (tracker, ..) = InstallTracker::new();
-        for task in tasks {
-            match task {
-                InstallTask::PackageManager { tool_name, .. } => {
-                    self.installed_tools.insert(tool_name, PathBuf::new());
-                }
-                InstallTask::Download { tool_name, .. } => {
-                    self.installed_tools.insert(tool_name, PathBuf::new());
-                }
-                InstallTask::AUR { tool_name, .. } => {
-                    self.installed_tools.insert(tool_name, PathBuf::new());
-                }
-            }
-        }
-        Ok(tracker)
+    fn run_install_task(
+        &self,
+        task: &InstallTask,
+        progress_handler: &mut dyn FnMut(InstallProgress),
+    ) -> Result<()> {
+        let tool_name = task.tool_name().to_string();
+        self.installed_tools
+            .insert(tool_name.clone(), PathBuf::new());
+
+        progress_handler(InstallProgress::Success {
+            elapsed: Duration::ZERO,
+            tool_name,
+        });
+        Ok(())
     }
 }
 

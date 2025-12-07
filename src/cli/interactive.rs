@@ -16,6 +16,8 @@ pub fn enter_interactive_mode(
 ) -> Result<()> {
     debug!("entering interactive mode");
     loop {
+        stderr.clear_screen()?;
+
         print_cli_header();
         print_cli_header_line();
         print_select_action_instructions();

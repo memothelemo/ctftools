@@ -1,14 +1,11 @@
 use anyhow::Result;
-use log::warn;
 use std::path::PathBuf;
-use std::sync::mpsc;
-use std::time::Instant;
 
 use crate::env::Environment;
-use crate::install::{InstallProgress, InstallTask, InstallTracker};
+use crate::install::{InstallProgress, InstallTask};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
-use crate::util::{cmd_display, which_opt};
+use crate::util::which_opt;
 
 #[derive(Debug)]
 pub struct LiveEnvironment {
@@ -53,6 +50,14 @@ impl Environment for LiveEnvironment {
         true
     }
 
+    fn running_in_elevation(&self) -> bool {
+        crate::util::running_in_elevation()
+    }
+
+    fn supports_privilege_escalation(&self) -> bool {
+        crate::util::supports_privilege_escalation()
+    }
+
     fn pkg_manager(&self) -> Option<(PackageManager, PathBuf)> {
         self.pkg_manager.as_ref().cloned().map(WithPath::into_inner)
     }
@@ -91,52 +96,13 @@ impl Environment for LiveEnvironment {
         Ok(None)
     }
 
-    fn run_install_tasks(&self, tasks: Vec<InstallTask>) -> Result<InstallTracker> {
-        let (tracker, sender) = InstallTracker::new();
-        std::thread::spawn(move || {
-            for task in tasks {
-                let tool_name = task.tool_name().to_string();
-                let Err(error) = run_install_task(&sender, task) else {
-                    continue;
-                };
-
-                let progress = InstallProgress::Error { tool_name, error };
-                if let Err(error) = sender.send(progress) {
-                    warn!("failed to send install error report to the main thread: {error}");
-                }
-            }
-        });
-        Ok(tracker)
+    fn run_install_task(
+        &self,
+        task: &InstallTask,
+        progress_handler: &mut dyn FnMut(InstallProgress),
+    ) -> Result<()> {
+        crate::install::live::perform_task_via_pkg_manager(self, task, progress_handler)
     }
-}
-
-fn run_install_task(sender: &mpsc::Sender<InstallProgress>, task: InstallTask) -> Result<()> {
-    let now = Instant::now();
-    let tool_name = task.tool_name().to_string();
-
-    match task {
-        InstallTask::PackageManager {
-            exec,
-            arguments,
-            tool_name,
-            ..
-        } => {
-            let cmd = crate::util::make_cmd(exec, arguments);
-            sender.send(InstallProgress::Command {
-                text: cmd_display(&cmd),
-                tool_name: tool_name.clone(),
-            })?;
-        }
-        InstallTask::Download { .. } => todo!(),
-        InstallTask::AUR { .. } => todo!(),
-    }
-
-    sender.send(InstallProgress::Success {
-        elapsed: now.elapsed(),
-        tool_name,
-    })?;
-
-    Ok(())
 }
 
 #[derive(Clone)]

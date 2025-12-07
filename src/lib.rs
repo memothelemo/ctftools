@@ -4,4 +4,5 @@ pub mod pkg;
 pub mod registry;
 
 pub mod env;
+pub mod process;
 pub mod util;

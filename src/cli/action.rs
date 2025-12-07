@@ -20,6 +20,7 @@ pub enum Action<'a> {
 
     /// (Debug) Forcibly reinstalls all tools from the toolkit.
     #[cfg(debug_assertions)]
+    #[clap(name = "install-all")]
     InstallAllTools,
 
     /// Exits the application.

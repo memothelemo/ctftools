@@ -2,7 +2,7 @@ use anyhow::Result;
 use log::debug;
 use std::path::PathBuf;
 
-use crate::install::{InstallPlanResult, InstallTask, InstallTaskError, InstallTracker};
+use crate::install::{InstallPlanResult, InstallProgress, InstallTask, InstallTaskError};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::{ToolMetadata, Toolkit};
 
@@ -25,6 +25,14 @@ pub trait Environment: std::fmt::Debug {
     fn is_live(&self) -> bool {
         false
     }
+
+    /// This function tells whether this environment is running in elevation mode.
+    #[must_use]
+    fn running_in_elevation(&self) -> bool;
+
+    /// Checks if the current environment allows escalating process privileges on demand.
+    #[must_use]
+    fn supports_privilege_escalation(&self) -> bool;
 
     /// Gets the current [package manager] along with its binary path of the environment.
     ///
@@ -145,7 +153,11 @@ pub trait Environment: std::fmt::Debug {
         }
     }
 
-    fn run_install_tasks(&self, tasks: Vec<InstallTask>) -> Result<InstallTracker>;
+    fn run_install_task(
+        &self,
+        task: &InstallTask,
+        progress_handler: &mut dyn FnMut(InstallProgress),
+    ) -> Result<()>;
 }
 
 #[cfg(test)]
