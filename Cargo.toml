@@ -38,7 +38,7 @@ sudo = "0.6.0"
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.62.2"
-features = ["Win32_Security", "Win32_System_Threading"]
+features = ["Win32_System_Diagnostics_ToolHelp", "Win32_Security", "Win32_System_Threading"]
 
 [dev-dependencies]
 assert_cmd = "2.1.1"

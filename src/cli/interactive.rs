@@ -8,6 +8,7 @@ use crate::cli::ansi::*;
 use crate::cli::{Action, TermExt};
 use crate::env::Environment;
 use crate::registry::Toolkit;
+use crate::util::started_by_double_click;
 
 pub fn enter_interactive_mode(
     env: &dyn Environment,
@@ -16,7 +17,10 @@ pub fn enter_interactive_mode(
 ) -> Result<()> {
     debug!("entering interactive mode");
     loop {
-        stderr.clear_screen()?;
+        // Clear the screen or leave it as it is?
+        if env.is_live() && started_by_double_click() {
+            stderr.clear_screen()?;
+        }
 
         print_cli_header();
         print_cli_header_line();
