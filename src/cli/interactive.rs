@@ -4,8 +4,8 @@ use console::{Color, Style};
 use dialoguer::{FuzzySelect, theme::ColorfulTheme};
 use log::debug;
 
-use crate::cli::ansi::*;
 use crate::cli::{Action, TermExt};
+use crate::cli::{ansi::*, debug_enabled};
 use crate::env::Environment;
 use crate::registry::Toolkit;
 use crate::util::started_by_double_click;
@@ -18,7 +18,7 @@ pub fn enter_interactive_mode(
     debug!("entering interactive mode");
     loop {
         // Clear the screen or leave it as it is?
-        if env.is_live() && started_by_double_click() {
+        if env.is_live() && !debug_enabled() && started_by_double_click() {
             stderr.clear_screen()?;
         }
 

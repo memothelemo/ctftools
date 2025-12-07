@@ -52,12 +52,6 @@ impl Toolkit {
                 tool.name = command.clone();
             }
 
-            // If `default` key is not defined in packages field then insert it
-            // with the associated key as a value.
-            if !tool.packages.contains_key("default") {
-                tool.packages.insert("default".to_string(), command.clone());
-            }
-
             tool.command = command;
             tool.description = tool.description.trim().to_string();
             tools.push(tool);
@@ -187,15 +181,30 @@ pub struct ToolWindowsMetadata {
 /// for the corresponding platform. If a platform is not supported, its
 /// field can be `None`.
 #[derive(Debug, Default, Builder, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(default)]
 pub struct ToolPlatformDownloads {
-    /// Download URL for Windows, if available.
-    pub windows: Option<String>,
+    /// Download instructions for Windows, if available.
+    pub windows: Option<ToolDownloadInstructions>,
 
-    /// Download URL for macOS, if available.
-    pub macos: Option<String>,
+    /// Download instructions for macOS, if available.
+    pub macos: Option<ToolDownloadInstructions>,
 
-    /// Download URL for Linux, if available.
-    pub linux: Option<String>,
+    /// Download instructions for Linux, if available.
+    pub linux: Option<ToolDownloadInstructions>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DownloadFileFormat {
+    ZIP,
+    #[serde(rename = "exe")]
+    Executable,
+}
+
+#[derive(Debug, Builder, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ToolDownloadInstructions {
+    pub format: DownloadFileFormat,
+    pub url: String,
 }
 
 #[cfg(test)]

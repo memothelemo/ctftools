@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 use crate::pkg::{AurHelper, PackageManager};
-use crate::registry::ToolMetadata;
+use crate::registry::{ToolDownloadInstructions, ToolMetadata};
 
 /// Represents an action to install a tool.
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -25,11 +25,11 @@ pub enum InstallTask {
 
     /// Install by downloading an installer from a URL.
     Download {
+        /// Instructions on how to install a tool from a download.
+        instructions: ToolDownloadInstructions,
+
         /// The original tool name to be installed.
         tool_name: String,
-
-        /// URL to the installer or release artifact.
-        url: String,
     },
 
     /// Install the tool by installing a package from the Arch
@@ -115,7 +115,7 @@ impl InstallTask {
     /// download URL exists for the current target OS, it returns
     /// `Err(InstallTaskError::CannotInstallTool)`.
     pub fn from_downloads(tool: &ToolMetadata) -> Result<Self, InstallTaskError> {
-        let url = if cfg!(target_os = "windows") {
+        let instructions = if cfg!(target_os = "windows") {
             tool.downloads.windows.clone()
         } else if cfg!(target_os = "macos") {
             tool.downloads.macos.clone()
@@ -125,13 +125,14 @@ impl InstallTask {
             None
         };
 
-        url.map(|url| Self::Download {
-            tool_name: tool.name.clone(),
-            url,
-        })
-        .ok_or_else(|| InstallTaskError::CannotInstallTool {
-            tool_name: tool.name.clone(),
-        })
+        instructions
+            .map(|inner| Self::Download {
+                instructions: inner,
+                tool_name: tool.name.clone(),
+            })
+            .ok_or_else(|| InstallTaskError::CannotInstallTool {
+                tool_name: tool.name.clone(),
+            })
     }
 
     /// Creates an appropriate [`InstallTask`] object from
@@ -226,7 +227,9 @@ mod tests {
 
     use crate::install::{InstallTask, InstallTaskError};
     use crate::pkg::PackageManager;
-    use crate::registry::{ToolMetadata, ToolPlatformDownloads};
+    use crate::registry::{
+        DownloadFileFormat, ToolDownloadInstructions, ToolMetadata, ToolPlatformDownloads,
+    };
 
     #[test]
     fn test_from_download_with_no_download_links() {
@@ -264,9 +267,24 @@ mod tests {
             .command("foo".to_string())
             .downloads(
                 ToolPlatformDownloads::builder()
-                    .windows("https://foo.local/downloads/windows.exe".to_string())
-                    .macos("https://foo.local/downloads/macos.exe".to_string())
-                    .linux("https://foo.local/downloads/linux.exe".to_string())
+                    .windows(
+                        ToolDownloadInstructions::builder()
+                            .url("https://foo.local/downloads/windows.exe".to_string())
+                            .format(DownloadFileFormat::Executable)
+                            .build(),
+                    )
+                    .macos(
+                        ToolDownloadInstructions::builder()
+                            .url("https://foo.local/downloads/macos.dmg".to_string())
+                            .format(DownloadFileFormat::Executable)
+                            .build(),
+                    )
+                    .linux(
+                        ToolDownloadInstructions::builder()
+                            .url("https://foo.local/downloads/linux".to_string())
+                            .format(DownloadFileFormat::Executable)
+                            .build(),
+                    )
                     .build(),
             )
             .build();
@@ -275,8 +293,11 @@ mod tests {
         assert_eq!(
             result,
             Ok(InstallTask::Download {
+                instructions: ToolDownloadInstructions::builder()
+                    .url(expected_link.to_string())
+                    .format(DownloadFileFormat::Executable)
+                    .build(),
                 tool_name: "foo".to_string(),
-                url: expected_link.to_string()
             })
         );
     }

@@ -32,6 +32,16 @@ pub enum InstallProgress {
         tool_name: String,
     },
 
+    /// This indicates that ctftools will now start to download an installer from
+    /// the Internet according to its designated link.
+    Download {
+        /// Associated URL to be downloaded for a tool.
+        url: String,
+
+        /// Associated tool that will be installed.
+        tool_name: String,
+    },
+
     /// Interrupt signal has been triggered. This is just a first
     /// warning message reminding the user that this process will
     /// be interrupted if triggered again.

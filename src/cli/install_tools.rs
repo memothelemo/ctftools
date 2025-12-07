@@ -8,6 +8,7 @@ use log::debug;
 use log::warn;
 
 use crate::cli::ansi::*;
+use crate::cli::debug_enabled;
 use crate::env::Environment;
 use crate::install::InstallPlanResult;
 use crate::install::InstallProgress;
@@ -132,6 +133,7 @@ pub fn install(
                 InstallProgress::Success { elapsed, .. } => {
                     *result = InstallResult::Successful { elapsed };
                 }
+                _ => panic!("unimplemented progress: {progress:?}"),
             };
         };
 
@@ -150,7 +152,9 @@ pub fn install(
             break;
         }
 
-        stderr.clear_screen()?;
+        if !debug_enabled() {
+            stderr.clear_screen()?;
+        }
     }
 
     let successfully_installed = results

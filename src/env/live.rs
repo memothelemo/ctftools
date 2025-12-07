@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::path::PathBuf;
 
 use crate::env::Environment;
+use crate::install::live::{perform_task_via_download, perform_task_via_pkg_manager};
 use crate::install::{InstallProgress, InstallTask};
 use crate::pkg::{AurHelper, PackageManager};
 use crate::registry::ToolMetadata;
@@ -101,7 +102,13 @@ impl Environment for LiveEnvironment {
         task: &InstallTask,
         progress_handler: &mut dyn FnMut(InstallProgress),
     ) -> Result<()> {
-        crate::install::live::perform_task_via_pkg_manager(self, task, progress_handler)
+        match task {
+            InstallTask::PackageManager { .. } => {
+                perform_task_via_pkg_manager(self, task, progress_handler)
+            }
+            InstallTask::Download { .. } => perform_task_via_download(self, task, progress_handler),
+            InstallTask::AUR { .. } => todo!(),
+        }
     }
 }
 

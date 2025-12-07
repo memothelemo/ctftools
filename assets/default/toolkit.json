@@ -18,6 +18,16 @@
         "name": "curl",
         "description": "Curl"
     },
+    "foo": {
+        "name": "foo",
+        "description": "foo",
+        "downloads": {
+            "windows": {
+                "format": "exe",
+                "url": "https://github.com/memothelemo/ctftools/releases/download/v0.1.0-alpha.1/ctftools-0.1.0-alpha.1-windows-x86_64.exe"
+            }
+        }
+    },
     "ncat": {
         "name": "ncat (from Nmap)",
         "description": "Netcat-like tool from Nmap",
