@@ -1,51 +1,81 @@
-use anyhow::Result;
-use std::path::PathBuf;
+use crate::registry::ToolMetadata;
+use std::time::Duration;
 
-use crate::registry::{ToolMetadata, Toolkit};
-use crate::util::which_opt;
-
+pub mod live;
 pub mod task;
-pub use self::task::{InstallTask, InstallTaskError};
 
-/// Checks which tools in a `Toolkit` are installed on the system.
+pub use self::task::*;
+
+/// Represents the result of planning an installation for a single tool.
 ///
-/// It returns a vector of tuples, where each tuple contains:
-/// - a reference to the [tool's metadata](ToolMetadata)
-/// - a boolean indicating whether the tool's executable could be found or installed
-pub fn check_toolkit_installation(toolkit: &Toolkit) -> Result<Vec<(&ToolMetadata, bool)>> {
-    let iter = toolkit.tools().iter();
-    iter.map(|tool| {
-        let installed = find_tool_executable(tool)?.is_some();
-        Ok::<_, _>((tool, installed))
-    })
-    .collect()
+/// This enum indicates whether an [`InstallTask`] could be successfully created
+/// or if the tool cannot be installed through any of the available methods.
+#[derive(Debug, PartialEq, Eq)]
+pub enum InstallPlanResult<'a> {
+    /// An installation task was successfully created.
+    Task(InstallTask),
+
+    /// The tool could not be installed, with a reason.
+    CannotInstall(&'a ToolMetadata, InstallTaskError),
 }
 
-/// Attempts to locate the executable for a specific tool described by [`ToolMetadata`.]
-///
-/// The lookup strategy is:
-/// 1. Try to find the command on the system `PATH`.
-/// 2. On Windows, also check any additional executable paths associated
-///    with the tool's metadata.
-pub fn find_tool_executable(tool: &ToolMetadata) -> Result<Option<PathBuf>> {
-    // There are ways we can find the tool executable either:
-    // 1. By using the `which` operation (from PATH environment variable)
-    if let Some(path) = which_opt(&tool.command)? {
-        return Ok(Some(path));
-    }
+#[derive(Debug)]
+pub enum InstallProgress {
+    /// This indicates that ctftools executes a package manager
+    /// command that allows for a tool to be installed.
+    Command {
+        /// What is the command initiated in order to install
+        /// a tool to a package manager or AUR helper?
+        text: String,
 
-    // 2. Checking tool's associated executable (if the operating system is running on Windows)
-    #[cfg(target_os = "windows")]
-    for path in tool.windows.exec_paths.iter() {
-        use anyhow::Context;
+        /// Associated tool that will be installed.
+        tool_name: String,
+    },
 
-        let exists = std::fs::exists(path)
-            .with_context(|| format!("failed to find {} executable", path.display()))?;
+    /// This indicates that ctftools will now start to download an installer from
+    /// the Internet according to its designated link.
+    Download {
+        /// Associated URL to be downloaded for a tool.
+        url: String,
 
-        if exists {
-            return Ok(Some(path.to_path_buf()));
-        }
-    }
+        /// Associated tool that will be installed.
+        tool_name: String,
+    },
 
-    Ok(None)
+    /// Interrupt signal has been triggered. This is just a first
+    /// warning message reminding the user that this process will
+    /// be interrupted if triggered again.
+    InterruptFirstWarning,
+
+    /// The installation process is interrupted.
+    Interrupted,
+
+    /// A tool was successfully installed.
+    Success {
+        /// How long it takes to install a tool.
+        elapsed: Duration,
+
+        /// Associated tool that was successfully installed.
+        tool_name: String,
+    },
 }
+
+// #[derive(Debug)]
+// pub struct InstallTracker {
+//     recv: mpsc::Receiver<InstallProgress>,
+// }
+
+// impl InstallTracker {
+//     #[must_use]
+//     pub(crate) fn new() -> (Self, mpsc::Sender<InstallProgress>) {
+//         let (tx, rx) = mpsc::channel();
+//         let tracker = Self { recv: rx };
+//         (tracker, tx)
+//     }
+
+//     #[allow(clippy::should_implement_trait)]
+//     #[must_use]
+//     pub fn next(&mut self) -> Option<InstallProgress> {
+//         self.recv.recv().ok()
+//     }
+// }

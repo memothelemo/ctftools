@@ -4,6 +4,76 @@ use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Command;
 
+/// Returns true if the current process was most likely started by a user
+/// double-clicking an application icon (i.e. launched from a graphical file
+/// manager) rather than being started from an interactive terminal/shell.
+///
+/// As of writing this function, there's no implementation on Unix systems
+/// so it assumes that this process is started by the terminal.
+///
+/// Note: This function should be used only for UX decisions (e.g. whether to
+/// show GUI dialogs or spawn consoles) and never for security-sensitive logic.
+#[must_use]
+pub fn started_by_double_click() -> bool {
+    #[allow(unsafe_op_in_unsafe_fn)]
+    #[cfg(windows)]
+    unsafe fn windows_impl() -> Result<bool> {
+        use windows::Win32::Foundation::CloseHandle;
+        use windows::Win32::System::Diagnostics::ToolHelp::{
+            CreateToolhelp32Snapshot, PROCESSENTRY32, Process32First, Process32Next,
+            TH32CS_SNAPPROCESS,
+        };
+
+        unsafe fn get_process_entry(pid: u32) -> Result<Option<PROCESSENTRY32>> {
+            let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)?;
+
+            let mut process_entry: PROCESSENTRY32 = std::mem::zeroed();
+            process_entry.dwSize = std::mem::size_of::<PROCESSENTRY32>() as u32;
+            process_entry.szExeFile = [0; 260];
+
+            Process32First(snapshot, &mut process_entry as *mut _)?;
+
+            loop {
+                if process_entry.th32ProcessID == pid {
+                    CloseHandle(snapshot)?;
+                    return Ok(Some(process_entry));
+                }
+
+                if Process32Next(snapshot, &mut process_entry as *mut _).is_err() {
+                    CloseHandle(snapshot)?;
+                    return Ok(None);
+                }
+            }
+        }
+
+        // explorer.exe
+        let explorer_exe: [i8; 12] = [101, 120, 112, 108, 111, 114, 101, 114, 46, 101, 120, 101];
+        let Some(entry) = get_process_entry(std::process::id())? else {
+            return Ok(false);
+        };
+
+        match get_process_entry(entry.th32ParentProcessID)? {
+            None => Ok(false),
+            Some(e) => Ok(e.szExeFile[0..12] == explorer_exe),
+        }
+    }
+
+    cfg_if! {
+        if #[cfg(windows)] {
+            use log::warn;
+            match unsafe { windows_impl() } {
+                Ok(value) => value,
+                Err(error) => {
+                    warn!("Win32 API error occurred while trying to run `started_by_double_click` function: {error}");
+                    false
+                }
+            }
+        } else {
+            false
+        }
+    }
+}
+
 /// Returns a human-readable representation of a command.
 ///
 /// The returned string contains the program path (or name) followed by

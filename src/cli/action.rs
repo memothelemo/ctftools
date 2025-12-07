@@ -1,72 +1,68 @@
-use anyhow::{Context, Result};
-use ctftools::registry::{ToolMetadata, Toolkit};
-use dialoguer::{FuzzySelect, theme::ColorfulTheme};
-use log::debug;
+use crate::registry::{ToolMetadata, Toolkit};
+
+use clap::Parser;
 use std::borrow::Cow;
 
-#[derive(Debug)]
+/// An action that can be performed in the interactive menu.
+#[derive(Debug, PartialEq, Eq, Parser)]
 pub enum Action<'a> {
+    /// View details for a specific tool.
+    #[clap(skip)]
     Tool(&'a ToolMetadata),
-    InstallTools,
-    InstallAllTools,
-    #[cfg(debug_assertions)]
-    SerializeInstallTasks,
+
+    /// Checks which tools in the toolkit are installed on the system.
+    #[clap(name = "check")]
     CheckTools,
+
+    /// Installs any tools from the toolkit that are not currently installed.
+    #[cfg(feature = "auto-install-tools")]
+    #[clap(name = "install")]
+    InstallMissingTools,
+
+    /// (Debug) Forcibly reinstalls all tools from the toolkit.
+    #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
+    #[clap(name = "install-all")]
+    InstallAllTools,
+
+    /// Exits the application.
+    #[clap(skip)]
     Exit,
 }
 
 impl<'a> Action<'a> {
-    /// Returns the display name of each corresponding action.
+    /// Returns the human-readable display name for each action.
     #[must_use]
     pub fn display_name(&self) -> Cow<'static, str> {
         match self {
             Action::Tool(meta) => format!("🔨 {}", meta.name).into(),
-            Action::CheckTools => "💻 Check tools".into(),
-            Action::InstallAllTools => "💻 Install all tools (DEBUG)".into(),
-            Action::InstallTools => "💻 Install missing tools".into(),
+            Action::CheckTools => "🔎 Check which tools are installed".into(),
+            #[cfg(feature = "auto-install-tools")]
+            Action::InstallMissingTools => "📦 Install missing tools".into(),
+            #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
+            Action::InstallAllTools => "🚀 Install all tools".into(),
             Action::Exit => "🚪 Exit".into(),
-            #[cfg(debug_assertions)]
-            Action::SerializeInstallTasks => unreachable!(),
         }
     }
 
-    /// Generates a list of action that a user can allow to interact with the program.
+    /// Generates a list of available actions for the user to choose from.
     #[must_use]
     pub fn choices(toolkit: &'a Toolkit) -> Vec<Action<'a>> {
-        let mut last_choices = vec![Action::CheckTools, Action::InstallTools];
-        if crate::debug_enabled() {
-            last_choices.push(Action::InstallAllTools);
-        }
-        last_choices.push(Action::Exit);
+        let last = vec![Action::CheckTools];
 
-        let iter = toolkit.tools().iter().map(Action::Tool);
-        iter.chain(last_choices).collect()
+        #[cfg(feature = "auto-install-tools")]
+        last.push(Action::InstallMissingTools);
+
+        let mut choices: Vec<Action<'a>> = toolkit
+            .tools()
+            .iter()
+            .map(Action::Tool)
+            .chain(last)
+            .collect();
+
+        #[cfg(all(debug_assertions, feature = "auto-install-tools"))]
+        choices.push(Action::InstallAllTools);
+
+        choices.push(Action::Exit);
+        choices
     }
-}
-
-pub fn prompt_select_action<'a>(toolkit: &'a Toolkit) -> Result<Option<Action<'a>>> {
-    use console::{Color, Style};
-
-    let choices = Action::choices(toolkit);
-    let theme = ColorfulTheme {
-        active_item_style: Style::new().bold().fg(Color::Green),
-        ..Default::default()
-    };
-
-    let idx = FuzzySelect::with_theme(&theme)
-        .default(0)
-        .items(choices.iter().map(Action::display_name).collect::<Vec<_>>())
-        .report(false)
-        .interact()
-        .or_else(|error| match error {
-            dialoguer::Error::IO(inner) if inner.kind() == std::io::ErrorKind::Interrupted => {
-                debug!("got interrupted");
-                Ok(usize::MAX)
-            }
-            dialoguer::Error::IO(error) => Err(error),
-        })
-        .context("failed to prompt choice")?;
-
-    let choice = choices.into_iter().nth(idx);
-    Ok(choice)
 }

@@ -1,9 +1,12 @@
+use bon::Builder;
 use clap::Parser;
 
-#[derive(Debug, Parser)]
+use crate::cli::action::Action;
+
+#[derive(Debug, Builder, Parser)]
 pub struct Options {
     #[clap(subcommand)]
-    pub command: Option<Command>,
+    pub action: Option<Action<'static>>,
 
     /// **Development option**
     ///
@@ -13,18 +16,12 @@ pub struct Options {
     #[cfg(debug_assertions)]
     #[clap(long)]
     pub custom_toolkit: Option<String>,
-}
 
-#[derive(Debug, Clone, Parser)]
-pub enum Command {
-    Check,
-    InstallTools,
-
-    /// **Development command**
+    /// **Development option**
     ///
-    /// This allows to serialize the install tasks without using
-    /// `ctftools install`, that will actually install all of the missing
-    /// tools from the developer's environment.
+    /// Mocks the presence of certain tools for testing purposes.
+    /// Use a comma-separated list to specify tool names.
     #[cfg(debug_assertions)]
-    SerializeInstallTasks,
+    #[clap(long, value_delimiter = ',')]
+    pub mock_installed_tools: Option<Vec<String>>,
 }

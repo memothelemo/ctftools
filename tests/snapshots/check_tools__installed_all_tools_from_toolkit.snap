@@ -2,5 +2,5 @@
 source: tests/check_tools.rs
 expression: output
 ---
-* ✅ ping
+* ✅ foo
 All done! 1/1 tools installed.

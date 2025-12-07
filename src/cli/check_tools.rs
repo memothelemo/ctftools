@@ -1,21 +1,28 @@
 use anstream::{eprintln, println};
-use anyhow::Result;
-
+use anyhow::{Context, Result};
 use console::Term;
-use ctftools::install::check_toolkit_installation;
-use ctftools::registry::Toolkit;
 
-use crate::ansi::*;
+use crate::cli::TermExt;
+use crate::cli::ansi::*;
+use crate::env::Environment;
+use crate::registry::Toolkit;
 
-pub fn run(term: &Term, toolkit: &Toolkit) -> Result<()> {
+pub fn run(env: &dyn Environment, stderr: &Term, toolkit: &Toolkit) -> Result<()> {
+    stderr.hide_cursor()?;
     eprintln!("⏳ {BOLD}Checking the installation of all built-in tools...{BOLD:#}");
 
-    let results = check_toolkit_installation(toolkit)?;
-    crate::clear_last_lines(term, 1)?;
+    let results = env
+        .check_toolkit_installation(toolkit)
+        .context("failed to check installation of all built-in tools")?;
+
+    let total = results.len();
+    stderr.show_cursor()?;
+    stderr.clear_lines(1)?;
+
+    let divider = "=".repeat(25);
+    eprintln!("{BOLD}{divider} Built-in Tools {divider}{BOLD:#}");
 
     let mut installed_count = 0usize;
-    let expected_count = results.len();
-
     for (tool, installed) in results {
         let (emoji, style) = if installed {
             installed_count += 1;
@@ -27,17 +34,20 @@ pub fn run(term: &Term, toolkit: &Toolkit) -> Result<()> {
     }
 
     eprintln!();
-    if installed_count == expected_count {
+    if installed_count == total {
         println!(
-            "{GREEN}{BOLD}All done! {installed_count}/{expected_count} tools installed.{BOLD:#}{GREEN:#}"
+            "{GREEN}{BOLD}All done! {installed_count}/{total} tools installed.{BOLD:#}{GREEN:#}"
         );
     } else {
-        let missing = expected_count - installed_count;
-        println!("{RED}{BOLD}Missing tools: {missing}/{expected_count}{BOLD:#}{RED:#}");
+        let missing = total - installed_count;
+        println!("{RED}{BOLD}Missing tools: {missing}/{total}{BOLD:#}{RED:#}");
+        #[cfg(feature = "auto-install-tools")]
         println!(
             "{GRAY}{BOLD}You may want to return the selector again to install \
             the missing tools.{BOLD:#}{GRAY:#}"
         );
+        #[cfg(not(feature = "auto-install-tools"))]
+        println!("{GRAY}Please install these missing tools manually.{GRAY:#}");
     }
 
     Ok(())

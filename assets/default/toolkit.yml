@@ -1,0 +1,161 @@
+# The tools listed here are defined at compile time and serv
+# as the program’s default toolkit.
+#
+# You may include additional CTF tools to extend the available
+# options an customize the environment to your needs.
+
+binwalk:
+  name: Binwalk
+  description: >
+    Analyzes, identifies, and extracts files embedded within binary/firmware images.
+    Essential for carving data out of corrupted or container files.
+  examples:
+    - binwalk file.bin
+    - binwalk -e file.bin
+  windows:
+    exec_paths:
+      - C:\ProgramData\chocolatey\bin\binwalk.exe
+
+burpsuite:
+  name: Burp Suite
+  description: >
+    An integrated platform for testing web applications. Used to proxy, intercept,
+    view, and modify HTTP/S traffic, discover endpoints, and launch attacks.
+
+    This application utilizes GUI, so please launch it manually.
+  windows:
+    exec_paths:
+      - C:\Program Files\BurpSuiteCommunity\BurpSuiteCommunity.exe
+      - "%LOCALAPPDATA%\\Programs\\BurpSuiteCommunity\\BurpSuiteCommunity.exe"
+
+curl:
+  name: curl
+  description: >
+    A command-line tool for transferring data with URLs. Excellent for scripting
+    web interactions, testing endpoints, and exploiting blind vulnerabilities (e.g., SSRF).
+  examples:
+    - curl http://target.com/
+    - curl -X POST -d 'user=admin&pass=123' http://target.com/login
+    - curl -I http://target.com
+  windows:
+    exec_paths:
+      - C:\Windows\System32\curl.exe
+
+cyberchef:
+  name: CyberChef
+  description: >
+    "The Cyber Swiss Army Knife"—a web app for encoding, decoding, encryption, and
+    data analysis. Allows complex "recipes" to decode nested obfuscation.
+
+    This application utilizes GUI.
+  windows:
+    exec_paths:
+      - C:\Program Files\CyberChef\CyberChef.exe
+      - "%LOCALAPPDATA%\\Programs\\CyberChef\\CyberChef.exe"
+
+exiftool:
+  name: ExifTool
+  description: >
+    Command-line utility for reading, writing, and editing metadata (EXIF, GPS,
+    etc.) in various file types, including images, audio, and documents.
+  examples:
+    - exiftool file.jpg
+    - exiftool -Comment file.jpg
+    - exiftool -all= -o cleaned.jpg file.jpg
+  windows:
+    exec_paths:
+      - C:\Program Files\Exiftool\exiftool.exe
+
+ghidra:
+  name: Ghidra
+  description: >
+    A software reverse engineering (SRE) framework developed by the National Security Agency (NSA).
+    Used for disassembling, decompiling (to pseudo-C), and analyzing binaries to understand logic.
+
+    This application utilizes GUI.
+  windows:
+    exec_paths:
+      - C:\Program Files\ghidra\ghidraRun.bat
+
+hashcat:
+  name: hashcat
+  description: >
+    The world's fastest and most versatile password recovery tool. Leverages GPU
+    power for dictionary, combinator, and mask-based attacks on various hash types..
+  examples:
+    - hashcat -m 0 hash.txt wordlist.txt
+    - hashcat -a 3 -m 100 hash.txt ?l?d?d?d
+  windows:
+    exec_paths:
+      - C:\Program Files\hashcat\hashcat.exe
+
+john:
+  name: John the Ripper
+  description: >
+    A popular, CPU-optimized password cracking tool. Automatically detects hash
+    types and uses various modes like wordlist, single, and brute-force.
+  examples:
+    - john --wordlist=rockyou.txt hash_file.txt
+    - john --show hash_file.txt
+  windows:
+    exec_paths:
+      - C:\Program Files\John\run\john.exe
+
+ncat:
+  name: ncat (from Nmap)
+  description: >
+    Flexible networking swiss-army knife for TCP/UDP sockets, relays,
+    and port listeners. Compatible with traditional netcat syntax.
+  examples:
+    - ncat -lvnp 9001
+    - ncat target 80
+    - ncat --ssl target 443
+
+r2:
+  name: radare2 (r2)
+  description: >
+    A command-line framework for reverse engineering, disassembly, and debugging.
+    Offers a highly customizable, powerful, scriptable alternative to GUI tools.
+  examples:
+    - r2 -A binary_file; aab; s main; pdf
+    - r2 -d program
+  windows:
+    exec_paths:
+      - C:\ProgramData\chocolatey\bin\radare2.exe
+
+stegseek:
+  name: StegSeek
+  description: >
+    A highly optimized steganography tool for **brute-forcing passwords** on
+    steghide-embedded data, especially in JPG files. Uses fast, multi-threaded cracking.
+  examples:
+    - stegseek image.jpg /usr/share/wordlists/rockyou.txt
+
+strings:
+  name: strings
+  description: >
+    A standard utility that extracts all human-readable character sequences (strings)
+    from binary files, often revealing passwords, paths, or hidden flags/messages.
+  examples:
+    - strings -n 8 file.bin
+    - strings image.jpg | grep "FLAG"
+
+wireshark:
+  name: Wireshark
+  description: >
+    A graphical network protocol analyzer. Used to examine packet captures (.pcap)
+    to reconstruct sessions, extract files, and find flags/credentials sent over the network.
+
+    This application utilizes GUI, so please launch it manually.
+  windows:
+    exec_paths:
+      - C:\Program Files\Wireshark\Wireshark.exe
+
+zsteg:
+  name: zsteg
+  description: >
+    A command-line tool specifically for detecting and extracting data hidden in
+    PNG and BMP images, particularly effective at Least Significant Bit (LSB) steganography.
+  examples:
+    - zsteg image.png
+    - zsteg -E 'b1,rgb,lsb,y' image.png

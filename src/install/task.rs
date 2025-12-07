@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 use crate::pkg::{AurHelper, PackageManager};
-use crate::registry::ToolMetadata;
+use crate::registry::{ToolDownloadInstructions, ToolMetadata};
 
 /// Represents an action to install a tool.
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -18,12 +18,18 @@ pub enum InstallTask {
 
         /// Whether the package manager invocation requires elevated privileges.
         sudo: bool,
+
+        /// The original tool name to be installed.
+        tool_name: String,
     },
 
     /// Install by downloading an installer from a URL.
     Download {
-        /// URL to the installer or release artifact.
-        url: String,
+        /// Instructions on how to install a tool from a download.
+        instructions: ToolDownloadInstructions,
+
+        /// The original tool name to be installed.
+        tool_name: String,
     },
 
     /// Install the tool by installing a package from the Arch
@@ -38,7 +44,22 @@ pub enum InstallTask {
     AUR {
         /// Name of the package in the AUR.
         package_name: String,
+
+        /// The original tool name to be installed.
+        tool_name: String,
     },
+}
+
+impl InstallTask {
+    /// Gets the associated tool name from a task in any variant.
+    #[must_use]
+    pub fn tool_name(&self) -> &str {
+        match self {
+            Self::AUR { tool_name, .. } => tool_name,
+            Self::Download { tool_name, .. } => tool_name,
+            Self::PackageManager { tool_name, .. } => tool_name,
+        }
+    }
 }
 
 /// Errors that can occur while creating an [`InstallTask`] from a tool.
@@ -71,6 +92,7 @@ impl InstallTask {
         aur_helper: AurHelper,
         path_to_aur_helper: PathBuf,
         package_name: String,
+        tool_name: String,
     ) -> Self {
         let arguments = match aur_helper {
             AurHelper::Paru | AurHelper::Yay => ["-S", &*package_name],
@@ -83,6 +105,7 @@ impl InstallTask {
             exec: path_to_aur_helper,
             arguments,
             sudo: aur_helper.needs_privilege(),
+            tool_name,
         }
     }
 
@@ -92,7 +115,7 @@ impl InstallTask {
     /// download URL exists for the current target OS, it returns
     /// `Err(InstallTaskError::CannotInstallTool)`.
     pub fn from_downloads(tool: &ToolMetadata) -> Result<Self, InstallTaskError> {
-        let url = if cfg!(target_os = "windows") {
+        let instructions = if cfg!(target_os = "windows") {
             tool.downloads.windows.clone()
         } else if cfg!(target_os = "macos") {
             tool.downloads.macos.clone()
@@ -102,7 +125,11 @@ impl InstallTask {
             None
         };
 
-        url.map(|url| Self::Download { url })
+        instructions
+            .map(|inner| Self::Download {
+                instructions: inner,
+                tool_name: tool.name.clone(),
+            })
             .ok_or_else(|| InstallTaskError::CannotInstallTool {
                 tool_name: tool.name.clone(),
             })
@@ -145,6 +172,7 @@ impl InstallTask {
             if use_aur {
                 return Ok(InstallTask::AUR {
                     package_name: arch_package.to_string(),
+                    tool_name: tool.name.clone(),
                 });
             }
 
@@ -157,6 +185,7 @@ impl InstallTask {
                 exec: path_to_pkg_manager,
                 arguments,
                 sudo: pkg_manager.needs_privilege(),
+                tool_name: tool.name.clone(),
             });
         }
 
@@ -185,6 +214,7 @@ impl InstallTask {
             exec: path_to_pkg_manager,
             arguments: args,
             sudo: pkg_manager.needs_privilege(),
+            tool_name: tool.name.clone(),
         })
     }
 }
@@ -195,9 +225,11 @@ mod tests {
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
-    use crate::install::task::{InstallTask, InstallTaskError};
+    use crate::install::{InstallTask, InstallTaskError};
     use crate::pkg::PackageManager;
-    use crate::registry::{ToolMetadata, ToolPlatformDownloads};
+    use crate::registry::{
+        DownloadFileFormat, ToolDownloadInstructions, ToolMetadata, ToolPlatformDownloads,
+    };
 
     #[test]
     fn test_from_download_with_no_download_links() {
@@ -235,9 +267,24 @@ mod tests {
             .command("foo".to_string())
             .downloads(
                 ToolPlatformDownloads::builder()
-                    .windows("https://foo.local/downloads/windows.exe".to_string())
-                    .macos("https://foo.local/downloads/macos.exe".to_string())
-                    .linux("https://foo.local/downloads/linux.exe".to_string())
+                    .windows(
+                        ToolDownloadInstructions::builder()
+                            .url("https://foo.local/downloads/windows.exe".to_string())
+                            .format(DownloadFileFormat::Executable)
+                            .build(),
+                    )
+                    .macos(
+                        ToolDownloadInstructions::builder()
+                            .url("https://foo.local/downloads/macos.dmg".to_string())
+                            .format(DownloadFileFormat::Executable)
+                            .build(),
+                    )
+                    .linux(
+                        ToolDownloadInstructions::builder()
+                            .url("https://foo.local/downloads/linux".to_string())
+                            .format(DownloadFileFormat::Executable)
+                            .build(),
+                    )
                     .build(),
             )
             .build();
@@ -246,7 +293,11 @@ mod tests {
         assert_eq!(
             result,
             Ok(InstallTask::Download {
-                url: expected_link.to_string()
+                instructions: ToolDownloadInstructions::builder()
+                    .url(expected_link.to_string())
+                    .format(DownloadFileFormat::Executable)
+                    .build(),
+                tool_name: "foo".to_string(),
             })
         );
     }
@@ -390,7 +441,8 @@ mod tests {
                     .into_iter()
                     .map(String::from)
                     .collect(),
-                sudo: true
+                sudo: true,
+                tool_name: "foo".to_string(),
             })
         );
     }
@@ -422,7 +474,8 @@ mod tests {
                     .into_iter()
                     .map(String::from)
                     .collect(),
-                sudo: true
+                sudo: true,
+                tool_name: "foo".to_string(),
             })
         );
     }
@@ -448,7 +501,8 @@ mod tests {
         assert_eq!(
             result,
             Ok(InstallTask::AUR {
-                package_name: "foo-bin".to_string()
+                package_name: "foo-bin".to_string(),
+                tool_name: "foo".to_string(),
             })
         );
     }

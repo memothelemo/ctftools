@@ -1,0 +1,8 @@
+---
+source: src/env/live.rs
+expression: "WithPath { inner: PackageManager::Pacman, path: PathBuf::from(\"\"), }"
+---
+{
+    "inner": Pacman,
+    "path": "",
+}
