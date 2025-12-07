@@ -13,7 +13,13 @@ fn main() -> Result<()> {
     let mut opts = cli::Options::parse();
 
     // Do we need to go to live or mock?
-    let env: Arc<dyn Environment> = if let Some(tools) = opts.mock_installed_tools.take() {
+    let env: Arc<dyn Environment> = load_environment(&mut opts)?;
+    ctftools::cli::run(env, opts, None)
+}
+
+fn load_environment(opts: &mut cli::Options) -> Result<Arc<dyn Environment>> {
+    #[cfg(debug_assertions)]
+    if let Some(tools) = opts.mock_installed_tools.take() {
         // Warn the developer that they are using a mocked environment.
         eprintln!(
             "{YELLOW_BOLD}⚠️ WARNING: You are running ctftools with a mocked system environment. \
@@ -27,10 +33,10 @@ fn main() -> Result<()> {
             map.insert(name, PathBuf::new());
         });
 
-        Arc::new(MockEnvironment::builder().installed_tools(map).build())
-    } else {
-        Arc::new(LiveEnvironment::new()?)
-    };
+        return Ok(Arc::new(
+            MockEnvironment::builder().installed_tools(map).build(),
+        ));
+    }
 
-    ctftools::cli::run(env, opts, None)
+    Ok(Arc::new(LiveEnvironment::new()?))
 }

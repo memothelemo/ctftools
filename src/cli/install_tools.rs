@@ -62,6 +62,8 @@ pub fn install(
         outcomes.len()
     );
 
+    // Filter out the outcome that thrown an error so we only have
+    // successfully made tasks left.
     let mut tasks = Vec::new();
     for outcome in outcomes {
         match outcome {
@@ -90,10 +92,6 @@ pub fn install(
         println!("{GREEN:#}{BOLD:#}");
         return Ok(());
     }
-
-    // Filter out the outcome that thrown an error so we only have
-    // successfully made tasks left.
-    stderr.hide_cursor()?;
 
     // Log the missing tools so the user knows what's going with this command here
     debug!("installing {} tool(s)", tasks.len());
@@ -190,7 +188,6 @@ pub fn install(
         }
     }
 
-    stderr.show_cursor()?;
     if let Some(error) = captured_error {
         return Err(error);
     }

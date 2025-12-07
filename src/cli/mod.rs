@@ -89,17 +89,20 @@ fn init_maybe_custom_toolkit(opts: &Options, existing_toolkit: Option<Toolkit>) 
             "using existing toolkit passed from `run` function; loaded tool(s) = {}",
             toolkit.tools().len()
         );
-        Ok(toolkit)
-    } else if let Some(json) = opts.custom_toolkit.as_ref() {
+        return Ok(toolkit);
+    }
+
+    #[cfg(debug_assertions)]
+    if let Some(json) = opts.custom_toolkit.as_ref() {
         let toolkit = Toolkit::from_json(json).context("could not load custom toolkit")?;
         debug!(
             "using custom toolkit; loaded tool(s) = {}",
             toolkit.tools().len()
         );
-        Ok(toolkit)
-    } else {
-        Ok(Toolkit::default().clone())
+        return Ok(toolkit);
     }
+
+    Ok(Toolkit::default().clone())
 }
 
 fn init_logger() {
