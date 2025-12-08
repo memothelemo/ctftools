@@ -36,7 +36,7 @@ pub fn run(env: &dyn Environment, stderr: &Term, tool: &ToolMetadata) -> Result<
         tool.name
     );
 
-    if let Some(path) = std::env::current_dir().ok() {
+    if let Ok(path) = std::env::current_dir() {
         eprintln!(
             "{GRAY}Your current directory is at: {}{GRAY:#}",
             path.display()
