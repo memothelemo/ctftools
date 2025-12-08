@@ -6,6 +6,7 @@ license = "GPL-3.0"
 version = "0.1.0"
 edition = "2024"
 repository = "https://github.com/memothelemo/ctftools"
+rust-version = "1.91.0"
 
 [features]
 auto-install-tools = ["reqwest", "tokio"]
@@ -28,6 +29,7 @@ env_logger = "0.11.8"
 libc = "0.2.177"
 log = "0.4.29"
 maplit = "1.0.2"
+opener = "0.8.3"
 reqwest = { version = "0.12.24", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yml = "0.0.12"

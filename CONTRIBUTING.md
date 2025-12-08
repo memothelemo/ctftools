@@ -13,7 +13,7 @@ with `ctftools` utility tool.
 
 1. **Install the Rust toolchain**
    
-   The project is built with Rust toolchain in stable channel, specifically version `1.89.0`.
+   The project is built with Rust toolchain in stable channel, preferably version `1.91.0` or higher.
 
 2. **Clone the source code**
 

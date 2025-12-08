@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use crate::cli::ansi::*;
 use crate::env::Environment;
 use crate::process::{ProcessBuilder, ProcessError};
-use crate::registry::ToolMetadata;
+use crate::registry::{ToolMetadata, ToolType};
 
 pub fn run(env: &dyn Environment, stderr: &Term, tool: &ToolMetadata) -> Result<()> {
     if !env.is_live() {
@@ -21,6 +21,33 @@ pub fn run(env: &dyn Environment, stderr: &Term, tool: &ToolMetadata) -> Result<
         eprintln!("{GRAY}{line}{GRAY:#}");
     }
 
+    match tool.kind {
+        ToolType::Executable => run_as_executable(env, tool),
+        ToolType::Website => run_as_link(tool),
+    }?;
+    eprintln!();
+
+    Ok(())
+}
+
+fn run_as_link(tool: &ToolMetadata) -> Result<()> {
+    eprintln!();
+    eprint!(
+        "{BOLD}Please enter for the tool selector to redirect \
+        you to a link for you...{BOLD:#}",
+    );
+
+    let stdin = std::io::stdin();
+    stdin.read_line(&mut String::new())?;
+
+    let url = tool.url.as_ref().expect("url must be present in link tool");
+    assert!(url.starts_with("https://") || url.starts_with("http://"));
+    opener::open(url).context("failed to redirect to a link")?;
+
+    Ok(())
+}
+
+fn run_as_executable(env: &dyn Environment, tool: &ToolMetadata) -> Result<()> {
     eprintln!();
     if !tool.examples.is_empty() {
         eprintln!("{BOLD}{GRAY}Examples:{GRAY:#}{BOLD:#}");
@@ -89,7 +116,6 @@ pub fn run(env: &dyn Environment, stderr: &Term, tool: &ToolMetadata) -> Result<
         .into());
     }
 
-    eprintln!();
     Ok(())
 }
 
