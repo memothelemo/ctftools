@@ -46,11 +46,19 @@ impl Toolkit {
                 Err(error) => panic!("failed to deserialize tool {command:?}: {error:#?}"),
             };
 
+            let mut kind = tool.kind;
+
+            // Change classification if the metadata has a link present
+            if tool.url.is_some() {
+                kind = ToolType::Website;
+            }
+
             // Use the associated key for a name if the name field feels empty.
             if tool.name.is_empty() || tool.name.chars().all(|v| v.is_whitespace()) {
                 tool.name = command.clone();
             }
 
+            tool.kind = kind;
             tool.command = command;
             tool.description = tool.description.trim().to_string();
             tools.push(tool);
@@ -145,6 +153,14 @@ impl Toolkit {
     }
 }
 
+/// This represents what kind of tool.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ToolType {
+    #[default]
+    Executable,
+    Website,
+}
+
 /// Metadata describing a tool provided by a toolkit.
 ///
 /// This struct carries the information needed to identify, display and
@@ -154,6 +170,11 @@ pub struct ToolMetadata {
     /// The full name of the provided tool from the toolkit
     #[serde(default)]
     pub name: String,
+
+    /// Type of a tool.
+    #[builder(default)]
+    #[serde(skip)]
+    pub kind: ToolType,
 
     /// The command or invocation used to run the tool
     #[serde(skip)]
@@ -167,6 +188,11 @@ pub struct ToolMetadata {
     /// A short, human-readable description summarizing the tool
     #[builder(default)]
     pub description: String,
+
+    /// A URL that the program can use to automatically open
+    /// the user's browser and load a particular webpage.
+    #[serde(default)]
+    pub url: Option<String>,
 
     /// A mapping from package manager identifier as a key to its
     /// equivalent package manager that provides the tool for that

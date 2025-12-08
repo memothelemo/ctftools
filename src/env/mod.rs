@@ -8,7 +8,7 @@ use crate::pkg::{AurHelper, PackageManager};
 #[cfg(feature = "auto-install-tools")]
 use log::debug;
 
-use crate::registry::{ToolMetadata, Toolkit};
+use crate::registry::{ToolMetadata, ToolType, Toolkit};
 
 pub mod live;
 pub mod mock;
@@ -66,7 +66,11 @@ pub trait Environment: std::fmt::Debug {
         &self,
         toolkit: &'t Toolkit,
     ) -> Result<Vec<(&'t ToolMetadata, bool)>> {
-        let iter = toolkit.tools().iter();
+        let iter = toolkit
+            .tools()
+            .iter()
+            .filter(|v| matches!(v.kind, ToolType::Executable));
+
         iter.map(|tool| {
             let installed = self.find_tool_executable(tool)?.is_some();
             Ok::<_, _>((tool, installed))

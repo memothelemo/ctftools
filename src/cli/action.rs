@@ -1,4 +1,4 @@
-use crate::registry::{ToolMetadata, Toolkit};
+use crate::registry::{ToolMetadata, ToolType, Toolkit};
 
 use clap::Parser;
 use std::borrow::Cow;
@@ -34,7 +34,10 @@ impl<'a> Action<'a> {
     #[must_use]
     pub fn display_name(&self) -> Cow<'static, str> {
         match self {
-            Action::Tool(meta) => format!("🔨 {}", meta.name).into(),
+            Action::Tool(meta) => match meta.kind {
+                ToolType::Executable => format!("🔨 {}", meta.name).into(),
+                ToolType::Website => format!("📎 {}", meta.name).into(),
+            },
             Action::CheckTools => "🔎 Check which tools are installed".into(),
             #[cfg(feature = "auto-install-tools")]
             Action::InstallMissingTools => "📦 Install missing tools".into(),

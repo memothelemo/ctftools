@@ -111,6 +111,16 @@ ncat:
     - ncat target 80
     - ncat --ssl target 443
 
+osint-framework:
+  name: OSINT Framework
+  description: >
+    A massive web-based directory of tools, resources, and links for Open-Source
+    Intelligence (OSINT) gathering. Organizes hundreds of external sites and
+    utilities by category (e.g., domain lookup, social media, public records)
+    for rapid target reconnaissance.
+
+  url: https://osintframework.com/
+
 r2:
   name: radare2 (r2)
   description: >
