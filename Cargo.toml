@@ -6,6 +6,7 @@ license = "GPL-3.0"
 version = "0.1.0"
 edition = "2024"
 repository = "https://github.com/memothelemo/ctftools"
+rust-version = "1.91.0"
 
 [features]
 auto-install-tools = ["reqwest", "tokio"]
