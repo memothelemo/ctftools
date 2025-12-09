@@ -4,7 +4,6 @@ use anyhow::{Context, Result};
 use console::Term;
 use log::{debug, info};
 use std::io::Write;
-use std::sync::Arc;
 
 use crate::env::Environment;
 use crate::registry::Toolkit;
@@ -21,7 +20,7 @@ pub mod run_tool;
 pub use self::action::Action;
 pub use self::options::Options;
 
-pub fn run(env: Arc<dyn Environment>, opts: Options, toolkit: Option<Toolkit>) -> Result<()> {
+pub fn run(env: &dyn Environment, opts: Options, toolkit: Option<Toolkit>) -> Result<()> {
     let is_env_live = env.is_live();
 
     // Initialize logger
@@ -38,7 +37,7 @@ pub fn run(env: Arc<dyn Environment>, opts: Options, toolkit: Option<Toolkit>) -
     // If we're in mock environment, we can directly run them.
     if let Some(action) = opts.action {
         self::interactive::print_cli_header();
-        self::try_run_action(action, &*env, &stderr, &toolkit)?;
+        self::try_run_action(action, env, &stderr, &toolkit)?;
 
         if !is_env_live {
             return Ok(());
@@ -58,7 +57,7 @@ pub fn run(env: Arc<dyn Environment>, opts: Options, toolkit: Option<Toolkit>) -
         panic!("Action is required to perform an action in mocked system environment");
     }
 
-    self::interactive::enter_interactive_mode(&*env, &stderr, &toolkit)
+    self::interactive::enter_interactive_mode(env, &stderr, &toolkit)
 }
 
 pub fn try_run_action(

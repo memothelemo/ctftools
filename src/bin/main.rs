@@ -2,6 +2,7 @@
 use anyhow::Result;
 use clap::Parser;
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -15,7 +16,17 @@ fn main() -> Result<()> {
 
     // Do we need to go to live or mock?
     let env: Arc<dyn Environment> = load_environment(&mut opts)?;
-    ctftools::cli::run(env, opts, None)
+    let result = ctftools::cli::run(&*env, opts, None);
+
+    // This is to prevent Windows from closing the window without
+    // giving them a notice if they started the program by double click.
+    if env.is_live() && ctftools::util::started_by_double_click() && cfg!(windows) {
+        let mut stdin = std::io::stdin();
+        stdin.read_to_string(&mut String::new());
+        Ok(())
+    } else {
+        result
+    }
 }
 
 fn load_environment(opts: &mut cli::Options) -> Result<Arc<dyn Environment>> {
