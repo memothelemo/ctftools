@@ -150,6 +150,18 @@ strings:
     - strings -n 8 file.bin
     - strings image.jpg | grep "FLAG"
 
+wc:
+  name: wc
+  description: >
+    (Word Count) A command-line utility for counting newlines, words, and
+    byte/character counts in files or standard input. It is frequently used in
+    CTF challenges to quickly assess the size or structure of a file or output,
+    often in conjunction with pipes.
+  examples:
+    - wc file.txt
+    - wc -l logfile.txt # Count lines
+    - wc -w data.txt  # Count words
+
 wireshark:
   name: Wireshark
   description: >
